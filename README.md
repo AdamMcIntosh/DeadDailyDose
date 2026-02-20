@@ -68,6 +68,16 @@ A mobile-friendly web version of Dead Daily Dose is served from the `docs/` fold
 
 **Live site:** <https://AdamMcIntosh.github.io/DeadDailyDose/>
 
+### Run the web app locally
+
+From the project root:
+
+```bash
+npm run serve
+```
+
+This runs `npx serve docs` and serves the site (typically at http://localhost:3000). No Node install is required beyond having `npx` available.
+
 ### Enable GitHub Pages
 
 1. Go to **Settings → Pages** in this repository.

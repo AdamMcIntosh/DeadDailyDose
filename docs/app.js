@@ -44,12 +44,20 @@ const audioEl = document.getElementById('audioPlayer');
 const nowPlayingEl = document.getElementById('nowPlaying');
 const prevBtn = document.getElementById('prevBtn');
 const nextBtn = document.getElementById('nextBtn');
+const repeatBtn = document.getElementById('repeatBtn');
 
 // ---------------------------------------------------------------------------
 // State
 // ---------------------------------------------------------------------------
 let currentTracks = [];
 let currentTrackIndex = -1;
+
+/** @type {'none'|'all'|'one'} */
+let repeatMode = 'none';
+const REPEAT_LABELS = { none: 'Repeat', all: '🔁 All', one: '🔁 One' };
+
+/** True when we have a show loaded but playback was blocked by browser autoplay policy. */
+let autoplayBlocked = false;
 
 // ---------------------------------------------------------------------------
 // Initialise
@@ -70,9 +78,22 @@ function init() {
   loadBtn.addEventListener('click', onLoadClick);
   prevBtn.addEventListener('click', playPrev);
   nextBtn.addEventListener('click', playNext);
+  repeatBtn.addEventListener('click', cycleRepeatMode);
   audioEl.addEventListener('ended', onTrackEnded);
 
-  // Auto-load on page open
+  updateRepeatButton();
+
+  // When autoplay is blocked, one tap anywhere (in response to a user gesture) can start playback
+  function tryUnblockPlayback() {
+    if (!autoplayBlocked || currentTracks.length === 0) return;
+    autoplayBlocked = false;
+    setStatus('');
+    audioEl.play().catch(() => {});
+  }
+  document.addEventListener('click', tryUnblockPlayback, { once: false });
+  document.addEventListener('keydown', tryUnblockPlayback, { once: false });
+
+  // Auto-load on page open (and attempt autoplay; may be blocked until user interacts)
   loadShow();
 }
 
@@ -94,6 +115,7 @@ async function loadShow() {
   trackListEl.innerHTML = '';
   currentTracks = [];
   currentTrackIndex = -1;
+  autoplayBlocked = false;
   audioEl.src = '';
 
   try {
@@ -138,9 +160,9 @@ async function loadShow() {
     renderTrackList(tracks);
     playerSection.classList.remove('is-hidden');
 
-    setStatus(show.isRandom ? 'Random show loaded. Press Play.' : 'Ready. Press Play.');
-    // Auto-select first track (but don't auto-play)
-    selectTrack(0, false);
+    setStatus(show.isRandom ? 'Random show loaded.' : 'Ready.');
+    // Auto-select and auto-play first track
+    selectTrack(0, true);
   } catch (err) {
     console.error(err);
     setStatus(`Error: ${err.message || 'Network or data error. Please try again.'}`);
@@ -334,9 +356,12 @@ function selectTrack(index, autoPlay) {
   nowPlayingEl.textContent = track.displayText;
   audioEl.src = track.url;
   if (autoPlay) {
-    audioEl.play().catch(() => {
-      setStatus('Playback blocked by browser. Press Play in the audio controls.');
-    });
+    audioEl.play()
+      .then(() => { autoplayBlocked = false; setStatus(''); })
+      .catch(() => {
+        autoplayBlocked = true;
+        setStatus('Tap anywhere to start playback.');
+      });
   }
 }
 
@@ -348,8 +373,31 @@ function playNext() {
   if (currentTrackIndex < currentTracks.length - 1) selectTrack(currentTrackIndex + 1, true);
 }
 
+function cycleRepeatMode() {
+  repeatMode = repeatMode === 'none' ? 'all' : repeatMode === 'all' ? 'one' : 'none';
+  updateRepeatButton();
+}
+
+function updateRepeatButton() {
+  repeatBtn.textContent = REPEAT_LABELS[repeatMode];
+  repeatBtn.title = `Repeat: ${repeatMode === 'none' ? 'None' : repeatMode === 'all' ? 'Repeat All' : 'Repeat One'}. Click to cycle.`;
+}
+
 function onTrackEnded() {
-  playNext();
+  if (repeatMode === 'one' && currentTrackIndex >= 0) {
+    audioEl.currentTime = 0;
+    audioEl.play().catch(() => {});
+    return;
+  }
+  if (currentTrackIndex < currentTracks.length - 1) {
+    playNext();
+    return;
+  }
+  if (repeatMode === 'all' && currentTracks.length > 0) {
+    selectTrack(0, true);
+    return;
+  }
+  // None and at end: stop (no-op)
 }
 
 // ---------------------------------------------------------------------------
