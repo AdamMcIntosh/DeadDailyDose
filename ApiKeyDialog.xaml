@@ -1,0 +1,25 @@
+<Window x:Class="DeadDailyDose.ApiKeyDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Set setlist.fm API Key" Height="220" Width="420"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <TextBlock Grid.Row="0" TextWrapping="Wrap" Margin="0,0,0,12">
+            Enter your setlist.fm API key to display song setlists for each show.
+            Get a free key at: https://www.setlist.fm/api
+        </TextBlock>
+        <TextBlock Grid.Row="1" Text="API Key:" Margin="0,0,0,4"/>
+        <TextBox Grid.Row="2" x:Name="ApiKeyTextBox" Margin="0,0,0,16" MaxLength="64"/>
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="OK" IsDefault="True" Click="Ok_Click" Padding="16,6" Margin="0,0,8,0"/>
+            <Button Content="Cancel" IsCancel="True" Click="Cancel_Click" Padding="16,6"/>
+        </StackPanel>
+    </Grid>
+</Window>
