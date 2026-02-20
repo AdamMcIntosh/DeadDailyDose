@@ -17,7 +17,7 @@ A Windows desktop app for your daily dose of Grateful Dead–era live music. Pic
 
 ## Download
 
-Pre-built Windows builds are published on [GitHub Releases](https://github.com/YOUR_USERNAME/DeadDailyDose/releases). Download the latest `DeadDailyDose.exe`, run it—no install or .NET required.
+Pre-built Windows builds are published on [GitHub Releases](https://github.com/AdamMcIntosh/DeadDailyDose/releases). Download the latest `DeadDailyDose.exe`, run it—no install or .NET required.
 
 ## Build & Run (from source)
 
@@ -60,7 +60,30 @@ The [Release workflow](.github/workflows/release.yml) builds the single-file exe
 2. **When you publish a release from the GitHub UI:**  
    On the repo’s **Releases** page, click **Create a new release**, choose an existing tag (e.g. `v1.0.0`), add notes, and click **Publish release**. The workflow runs and uploads `DeadDailyDose.exe` to that release.
 
-If a release only shows “Source code (zip)”, run the workflow manually: **Actions** → **Release** → **Run workflow** → enter the **tag** (e.g. `v1.2.0`) and run. The workflow will build and attach `DeadDailyDose.exe` to that release. (The tag must already have a release.) Replace `YOUR_USERNAME` in the Download section with your GitHub org or username.
+If a release only shows “Source code (zip)”, run the workflow manually: **Actions** → **Release** → **Run workflow** → enter the **tag** (e.g. `v1.2.0`) and run. The workflow will build and attach `DeadDailyDose.exe` to that release. (The tag must already have a release.)
+
+## GitHub Pages (Web Edition)
+
+A mobile-friendly web version of Dead Daily Dose is served from the `docs/` folder:
+
+**Live site:** <https://AdamMcIntosh.github.io/DeadDailyDose/>
+
+### Enable GitHub Pages
+
+1. Go to **Settings → Pages** in this repository.
+2. Under **Source**, select **Deploy from a branch**.
+3. Set **Branch** to `main` and **Folder** to `/docs`.
+4. Click **Save**.
+
+The site will be available at `https://AdamMcIntosh.github.io/DeadDailyDose/` within a minute or two.
+
+### Web features
+
+- Same show-of-the-day algorithm as the desktop app (deterministic by date, random fallback).
+- Supports Grateful Dead, Jerry Garcia Band, and Dead & Company.
+- Audio playback with track list (powered by Internet Archive).
+- Mobile-first responsive design using [Bulma CSS](https://bulma.io/).
+- No API key or build step required.
 
 ## License
 

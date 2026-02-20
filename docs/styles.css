@@ -1,0 +1,172 @@
+/* Dead Daily Dose — minimal custom styles on top of Bulma */
+
+/* ── Layout ── */
+body {
+  min-height: 100vh;
+  background: #1a1a2e;
+  color: #e0e0e0;
+}
+
+.hero.is-dark {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+}
+
+.hero-body .title,
+.hero-body .subtitle {
+  color: #e0c97f;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.hero-body .subtitle {
+  color: #c0a060;
+}
+
+/* ── Cards ── */
+.card {
+  background: #16213e;
+  border: 1px solid #0f3460;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.card-header {
+  background: #0f3460;
+  border-radius: 7px 7px 0 0;
+}
+
+.card-header-title {
+  color: #e0c97f;
+}
+
+.card-content {
+  padding: 1.25rem;
+}
+
+/* ── Select / Input ── */
+.select select,
+.input {
+  background: #0d1b2a;
+  border-color: #0f3460;
+  color: #e0e0e0;
+}
+
+.select select:focus,
+.input:focus {
+  border-color: #e0c97f;
+  box-shadow: 0 0 0 2px rgba(224, 201, 127, 0.25);
+}
+
+.label {
+  color: #c0a060;
+}
+
+/* ── Buttons ── */
+.button.is-warning {
+  background-color: #e0c97f;
+  border-color: #c8a84b;
+  color: #1a1a2e;
+  font-weight: 700;
+}
+
+.button.is-warning:hover {
+  background-color: #f0d890;
+}
+
+.button.is-ghost.track-btn {
+  color: #a0b8d0;
+  text-align: left;
+  width: 100%;
+  justify-content: flex-start;
+  padding: 0.4rem 0.75rem;
+  height: auto;
+  white-space: normal;
+}
+
+.button.is-ghost.track-btn:hover {
+  background: rgba(224, 201, 127, 0.1);
+  color: #e0c97f;
+}
+
+/* ── Track list ── */
+#trackList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.track-item {
+  border-bottom: 1px solid #0f3460;
+}
+
+.track-item:last-child {
+  border-bottom: none;
+}
+
+.track-item.is-active .track-btn {
+  background: rgba(224, 201, 127, 0.15);
+  color: #e0c97f;
+}
+
+.track-num {
+  min-width: 2rem;
+  display: inline-block;
+  opacity: 0.6;
+  font-size: 0.85em;
+}
+
+.track-title {
+  flex: 1;
+}
+
+/* ── Audio player ── */
+audio {
+  width: 100%;
+  filter: invert(0.85) hue-rotate(180deg);
+}
+
+/* ── Status ── */
+#status {
+  font-style: italic;
+  color: #a0b8d0;
+  font-size: 0.9rem;
+  min-height: 1.4em;
+}
+
+/* ── Show info ── */
+.show-badge {
+  background: rgba(224, 201, 127, 0.1);
+  border: 1px solid #c8a84b;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+#showTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #e0c97f;
+  margin-bottom: 0.25rem;
+}
+
+#showLink {
+  color: #60a0d0;
+  font-size: 0.85rem;
+  word-break: break-all;
+}
+
+#showLink:hover {
+  color: #80c0f0;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .card-content {
+    padding: 1rem;
+  }
+
+  audio {
+    height: 40px;
+  }
+}
