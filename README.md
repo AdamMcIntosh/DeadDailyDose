@@ -17,7 +17,7 @@ A Windows desktop app for your daily dose of Grateful Dead–era live music. Pic
 
 ## Download
 
-Pre-built Windows builds are published on [GitHub Releases](https://github.com/YOUR_USERNAME/DeadDailyDose/releases). Download the latest `DeadDailyDose-win-x64.zip`, unzip it, and run `DeadDailyDose.exe`. No .NET install required.
+Pre-built Windows builds are published on [GitHub Releases](https://github.com/YOUR_USERNAME/DeadDailyDose/releases). Download the latest `DeadDailyDose.exe`, run it—no install or .NET required.
 
 ## Build & Run (from source)
 
@@ -59,7 +59,7 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
-The [Release workflow](.github/workflows/release.yml) builds a self-contained Windows x64 app, zips it, and attaches it to a new GitHub Release. Replace `YOUR_USERNAME` in the Download section above with your GitHub org or username.
+The [Release workflow](.github/workflows/release.yml) builds a single-file, self-contained Windows x64 exe and attaches it to the GitHub Release. Replace `YOUR_USERNAME` in the Download section above with your GitHub org or username.
 
 ## License
 
