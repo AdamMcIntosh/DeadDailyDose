@@ -6,6 +6,12 @@ on:
       - 'v*'
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build and upload exe to (e.g. v1.2.0). Leave empty to use default branch.'
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -17,7 +23,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag != '' && inputs.tag || github.event_name == 'release' && github.event.release.tag_name || github.ref }}
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -38,6 +44,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload "${{ github.event.release.tag_name }}" publish/DeadDailyDose.exe --clobber --repo ${{ github.repository }}
+
+      - name: Upload exe (manual run)
+        if: github.event_name == 'workflow_dispatch' && inputs.tag != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ inputs.tag }}" publish/DeadDailyDose.exe --clobber --repo ${{ github.repository }}
 
       - name: Create Release and upload exe on tag push
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
