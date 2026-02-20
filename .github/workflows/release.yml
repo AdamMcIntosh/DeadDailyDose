@@ -6,6 +6,7 @@ on:
       - 'v*'
   release:
     types: [published]
+  workflow_dispatch:  # Added this for manual runs
 
 permissions:
   contents: write
@@ -27,10 +28,10 @@ jobs:
       - name: Publish (single-file exe, self-contained Windows x64)
         run: |
           dotnet publish DeadDailyDose.sln -c Release -r win-x64 --self-contained true `
-            -p:PublishSingleFile=true `
-            -p:IncludeNativeLibrariesForSelfExtract=true `
-            -p:PublishReadyToRun=true `
-            -o publish
+          -p:PublishSingleFile=true `
+          -p:IncludeNativeLibrariesForSelfExtract=true `
+          -p:PublishReadyToRun=true `
+          -o publish
 
       - name: Upload exe on Release published
         if: github.event_name == 'release'
