@@ -52,14 +52,15 @@ The key is saved in your AppData settings and not sent anywhere except setlist.f
 
 ## Publishing a release
 
-Releases are built automatically on GitHub when you push a version tag:
+The [Release workflow](.github/workflows/release.yml) builds the single-file exe and attaches it to a GitHub Release. It runs in two cases:
 
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
+1. **When you push a version tag:**  
+   `git tag v1.0.0` then `git push origin v1.0.0` — the workflow creates the release and uploads `DeadDailyDose.exe`.
 
-The [Release workflow](.github/workflows/release.yml) builds a single-file, self-contained Windows x64 exe and attaches it to the GitHub Release. Replace `YOUR_USERNAME` in the Download section above with your GitHub org or username.
+2. **When you publish a release from the GitHub UI:**  
+   On the repo’s **Releases** page, click **Create a new release**, choose an existing tag (e.g. `v1.0.0`), add notes, and click **Publish release**. The workflow runs and uploads `DeadDailyDose.exe` to that release.
+
+If a release only shows “Source code (zip)”, the workflow may still be running or may have failed — check the **Actions** tab. Replace `YOUR_USERNAME` in the Download section with your GitHub org or username.
 
 ## License
 
