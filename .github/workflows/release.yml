@@ -8,16 +8,16 @@ on:
     types: [published]
   workflow_dispatch:
     inputs:
-      tag:
-        description: 'Tag to build and upload exe to (e.g. v1.2.0). Leave empty to use default branch.'
-        required: false
-        type: string
+      tag_name:
+        description: 'Tag for the release (e.g., v1.0.0). If it does not exist, it will be created from the current branch.'
+        required: true
 
 permissions:
   contents: write
 
 jobs:
   build-and-release:
+    if: github.event_name != 'push' || github.actor != 'github-actions[bot]'  # Prevents loops from bot-pushed tags
     runs-on: windows-latest
     steps:
       - name: Checkout
@@ -33,10 +33,21 @@ jobs:
       - name: Publish (single-file exe, self-contained Windows x64)
         run: |
           dotnet publish DeadDailyDose.sln -c Release -r win-x64 --self-contained true `
-            -p:PublishSingleFile=true `
-            -p:IncludeNativeLibrariesForSelfExtract=true `
-            -p:PublishReadyToRun=true `
-            -o publish
+          -p:PublishSingleFile=true `
+          -p:IncludeNativeLibrariesForSelfExtract=true `
+          -p:PublishReadyToRun=true `
+          -o publish
+
+      - name: Create and push tag (manual dispatch only)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git ls-remote --exit-code --tags origin ${{ inputs.tag_name }} > $null 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            git tag ${{ inputs.tag_name }}
+            git push origin ${{ inputs.tag_name }}
+          }
 
       - name: Upload exe on Release published
         if: github.event_name == 'release'
@@ -45,18 +56,11 @@ jobs:
         run: |
           gh release upload "${{ github.event.release.tag_name }}" publish/DeadDailyDose.exe --clobber --repo ${{ github.repository }}
 
-      - name: Upload exe (manual run)
-        if: github.event_name == 'workflow_dispatch' && inputs.tag != ''
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload "${{ inputs.tag }}" publish/DeadDailyDose.exe --clobber --repo ${{ github.repository }}
-
-      - name: Create Release and upload exe on tag push
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+      - name: Create Release and upload exe on tag push or manual
+        if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) || github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.ref_name }}
           files: publish/DeadDailyDose.exe
           generate_release_notes: true
         env:
