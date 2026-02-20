@@ -24,11 +24,10 @@ public class MainViewModel : INotifyPropertyChanged
 {
     private static readonly HttpClient IaClient = new() { Timeout = TimeSpan.FromSeconds(30) };
 
-    /// <summary>Available artists for the daily dose (Grateful Dead, JGB, Solo Jerry, Dead & Company).</summary>
+    /// <summary>Available artists for the daily dose (Grateful Dead, JGB, Dead & Company).</summary>
     public static IReadOnlyList<Artist> Artists { get; } = new List<Artist>
     {
         new() { Name = "Grateful Dead", Collection = "GratefulDead", Mbid = "6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6" },
-        new() { Name = "Jerry Garcia (Solo)", Collection = "JerryGarcia", Mbid = "1ecff755-607d-4130-9a8a-8873f27e5de5", ExcludeKeyword = "jgb" },
         new() { Name = "Jerry Garcia Band", Collection = "JerryGarcia", Mbid = "6b5c16a5-9a3b-40e0-9fdb-789ab5a30f5a", CollectionFilterKeyword = "jgb" },
         new() { Name = "Dead & Company", Collection = "DeadAndCompany", Mbid = "94f8947c-2d9c-4519-bcf9-6d11a24ad006" }
     };
@@ -326,6 +325,7 @@ public class MainViewModel : INotifyPropertyChanged
                     Status = $"No shows found for {artist.Name}.";
                     CurrentShow = null;
                     ArtistForCurrentShow = null;
+                    RequestStop?.Invoke();
                     return;
                 }
             }
@@ -376,9 +376,16 @@ public class MainViewModel : INotifyPropertyChanged
         var list = await SearchShowsAsync(artist, $"collection:{collection}+AND+date:*-{mmdd}", 50).ConfigureAwait(false);
         if (list.Count == 0)
         {
-            // Try 2: identifier often contains the date (e.g. gd1982-02-20.xxx). Search for month-day in identifier.
+            // Try 2: identifier often contains the date (e.g. gd1982-02-20.xxx, jg87-02-20.jgb...). Search for month-day in identifier.
             var mmddInId = Uri.EscapeDataString(mmdd);
             list = await SearchShowsAsync(artist, $"collection:{collection}+AND+identifier:*{mmddInId}*", 100).ConfigureAwait(false);
+        }
+        // Try 3: for JGB etc., some shows live in other collections (e.g. Taper's Section). Search by identifier containing date + artist keyword.
+        if (list.Count == 0 && !string.IsNullOrEmpty(artist.CollectionFilterKeyword))
+        {
+            var keyword = Uri.EscapeDataString(artist.CollectionFilterKeyword);
+            var mmddEsc = Uri.EscapeDataString(mmdd);
+            list = await SearchShowsAsync(artist, $"identifier:*{mmddEsc}*+AND+identifier:*{keyword}*", 100).ConfigureAwait(false);
         }
         if (list.Count > 0)
         {
@@ -399,7 +406,33 @@ public class MainViewModel : INotifyPropertyChanged
             var showResult = await TryRandomShowFromCollectionAsync(artist, collection, rows).ConfigureAwait(false);
             if (showResult != null) return showResult;
         }
+        // For JGB etc., collection may not hold all shows — try random by identifier keyword across archive.
+        if (!string.IsNullOrEmpty(artist.CollectionFilterKeyword))
+        {
+            var showResult = await TryRandomShowByIdentifierKeywordAsync(artist, artist.CollectionFilterKeyword).ConfigureAwait(false);
+            if (showResult != null) return showResult;
+        }
         return null;
+    }
+
+    private async Task<Show?> TryRandomShowByIdentifierKeywordAsync(Artist artist, string keyword)
+    {
+        var keywordEsc = Uri.EscapeDataString(keyword);
+        var url = $"https://archive.org/advancedsearch.php?q=identifier:*{keywordEsc}*&fl[]=identifier&fl[]=title&fl[]=date&sort[]=date+desc&rows=500&output=json";
+        using var response = await IaClient.GetAsync(url).ConfigureAwait(false);
+        response.EnsureSuccessStatusCode();
+        var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+        using var doc = JsonDocument.Parse(json);
+        if (!TryGetDocsArray(doc.RootElement, out var docs))
+            return null;
+        var list = new List<ShowDoc>();
+        foreach (var item in docs.EnumerateArray())
+            list.Add(ShowDoc.FromElement(item));
+        var filtered = FilterShowsByArtist(list, artist);
+        if (filtered.Count == 0) return null;
+        var idx = Random.Shared.Next(filtered.Count);
+        var d = filtered[idx];
+        return new Show { Identifier = d.Identifier, Title = d.Title, Date = d.Date, IsRandom = true };
     }
 
     private async Task<Show?> TryRandomShowFromCollectionAsync(Artist artist, string collection, int rows)
@@ -409,13 +442,14 @@ public class MainViewModel : INotifyPropertyChanged
         fallback.EnsureSuccessStatusCode();
         var json = await fallback.Content.ReadAsStringAsync().ConfigureAwait(false);
         using var doc2 = JsonDocument.Parse(json);
-        if (!doc2.RootElement.TryGetProperty("response", out var resp2) || !resp2.TryGetProperty("docs", out var docs2))
+        if (!TryGetDocsArray(doc2.RootElement, out var docs2))
             return null;
         var allList = new List<ShowDoc>();
         foreach (var item in docs2.EnumerateArray())
             allList.Add(ShowDoc.FromElement(item));
         var filtered = FilterShowsByArtist(allList, artist);
-        if (filtered.Count == 0) return null;
+        if (filtered.Count == 0)
+            return null;
         var idx = Random.Shared.Next(filtered.Count);
         var doc = filtered[idx];
         return new Show
@@ -427,6 +461,23 @@ public class MainViewModel : INotifyPropertyChanged
         };
     }
 
+    /// <summary>Get the "docs" array from IA advanced search response (case-insensitive for response/docs).</summary>
+    private static bool TryGetDocsArray(JsonElement root, out JsonElement docs)
+    {
+        docs = default;
+        if (!TryGetChild(root, "response", out var resp)) return false;
+        return TryGetChild(resp, "docs", out docs);
+    }
+
+    private static bool TryGetChild(JsonElement parent, string name, out JsonElement child)
+    {
+        child = default;
+        foreach (var prop in parent.EnumerateObject())
+            if (prop.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+            { child = prop.Value; return true; }
+        return false;
+    }
+
     /// <summary>Run advanced search and return filtered list of show docs (empty if no results or missing structure).</summary>
     private async Task<List<ShowDoc>> SearchShowsAsync(Artist artist, string query, int rows)
     {
@@ -436,8 +487,7 @@ public class MainViewModel : INotifyPropertyChanged
         var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
-        if (!root.TryGetProperty("response", out var responseObj) ||
-            !responseObj.TryGetProperty("docs", out var docs))
+        if (!TryGetDocsArray(root, out var docs))
             return new List<ShowDoc>();
         var list = new List<ShowDoc>();
         foreach (var item in docs.EnumerateArray())

@@ -15,10 +15,48 @@
         <Setter Property="Padding" Value="0,4,0,4"/>
     </Style>
 
-    <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+    <!-- MenuItem: top-level and dropdown items; custom template so submenu popup uses dark theme -->
+    <Style TargetType="MenuItem">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}"/>
         <Setter Property="Padding" Value="12,6,12,6"/>
+        <Setter Property="FontFamily" Value="{StaticResource FontFamilyPrimary}"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="MenuItem">
+                    <Grid>
+                        <!-- Top-level / inline appearance -->
+                        <Border x:Name="Border" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}"
+                                BorderThickness="0" SnapsToDevicePixels="True">
+                            <ContentPresenter ContentSource="Header" ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                              RecognizesAccessKey="True" VerticalAlignment="Center"/>
+                        </Border>
+                        <!-- Submenu popup (dropdown): dark theme -->
+                        <Popup x:Name="SubmenuPopup" Placement="Bottom" IsOpen="{TemplateBinding IsSubmenuOpen}"
+                               AllowsTransparency="True" PopupAnimation="Slide" Focusable="False"
+                               VerticalOffset="-1">
+                            <Border x:Name="SubmenuBorder" Background="{StaticResource BrushSurfaceRaised}"
+                                    BorderBrush="{StaticResource BrushBorder}" BorderThickness="1"
+                                    CornerRadius="4" Padding="2" MinWidth="160">
+                                <ScrollViewer Margin="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                              CanContentScroll="True" SnapsToDevicePixels="True">
+                                    <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle"/>
+                                </ScrollViewer>
+                            </Border>
+                        </Popup>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsHighlighted" Value="True">
+                            <Setter TargetName="Border" Property="Background" Value="{StaticResource BrushSurfaceRaised}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{StaticResource BrushTextMuted}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <Style x:Key="LabelStyle" TargetType="TextBlock">
@@ -277,6 +315,19 @@
         <Setter Property="FontFamily" Value="{StaticResource FontFamilyPrimary}"/>
         <Setter Property="FontSize" Value="13"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <!-- Separator in menus (e.g. File | Exit) -->
+    <Style TargetType="Separator">
+        <Setter Property="Background" Value="{StaticResource BrushBorder}"/>
+        <Setter Property="Margin" Value="8,4,8,4"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Separator">
+                    <Border Height="1" Background="{TemplateBinding Background}" Margin="{TemplateBinding Margin}"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- ScrollBar styling so lists match the theme -->
