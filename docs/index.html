@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dead Daily Dose</title>
+  <meta name="description" content="Your daily dose of Grateful Dead–era live music from the Internet Archive." />
+
+  <!-- Bulma CSS (CDN) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css" />
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ── Hero header ── -->
+  <section class="hero is-dark is-small">
+    <div class="hero-body">
+      <div class="container">
+        <p class="title">🌹⚡ Dead Daily Dose</p>
+        <p class="subtitle">Your daily dose of Grateful Dead/JCB & Dead & Company music</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Main content ── -->
+  <section class="section">
+    <div class="container">
+      <div class="columns is-multiline">
+
+        <!-- ── Selection card ── -->
+        <div class="column is-full-mobile is-half-tablet is-one-third-desktop">
+          <div class="card">
+            <header class="card-header">
+              <p class="card-header-title">Select Show</p>
+            </header>
+            <div class="card-content">
+
+              <!-- Artist -->
+              <div class="field">
+                <label class="label" for="artistSelect">Artist</label>
+                <div class="control">
+                  <div class="select is-fullwidth">
+                    <select id="artistSelect"></select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Date (MM-DD) -->
+              <div class="field">
+                <label class="label" for="dateInput">Date (MM-DD)</label>
+                <div class="control">
+                  <input
+                    id="dateInput"
+                    class="input"
+                    type="text"
+                    placeholder="e.g. 05-08"
+                    maxlength="5"
+                    pattern="\d{2}-\d{2}"
+                  />
+                </div>
+                <p class="help" style="color:#a0b8d0;">Leave blank for today</p>
+              </div>
+
+              <!-- Load button -->
+              <div class="field">
+                <div class="control">
+                  <button id="loadBtn" class="button is-warning is-fullwidth">
+                    Get Show
+                  </button>
+                </div>
+              </div>
+
+              <!-- Status -->
+              <p id="status"></p>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Show info + player card ── -->
+        <div class="column is-full-mobile is-half-tablet is-two-thirds-desktop">
+
+          <!-- Show info -->
+          <div id="showInfo" class="is-hidden">
+            <div class="show-badge">
+              <p id="showTitle"></p>
+              <a id="showLink" href="#" target="_blank" rel="noopener noreferrer"></a>
+            </div>
+          </div>
+
+          <!-- Player -->
+          <div id="playerSection" class="card is-hidden">
+            <header class="card-header">
+              <p class="card-header-title">🎵 Now Playing: <span id="nowPlaying" style="font-weight:400;margin-left:.5rem;color:#a0b8d0;"></span></p>
+            </header>
+            <div class="card-content">
+
+              <!-- Audio element -->
+              <div class="field">
+                <audio id="audioPlayer" controls preload="metadata"></audio>
+              </div>
+
+              <!-- Prev / Next / Repeat -->
+              <div class="field">
+                <div class="buttons">
+                  <button id="prevBtn" class="button is-small is-outlined" style="border-color:#0f3460;color:#a0b8d0;">⏮ Prev</button>
+                  <button id="nextBtn" class="button is-small is-outlined" style="border-color:#0f3460;color:#a0b8d0;">Next ⏭</button>
+                  <button id="repeatBtn" class="button is-small is-outlined" style="border-color:#0f3460;color:#a0b8d0;" title="Repeat: None. Click to cycle.">🔁 Repeat</button>
+                </div>
+              </div>
+
+              <!-- Track list -->
+              <p class="label" style="margin-bottom:.5rem;">Tracks</p>
+              <ul id="trackList"></ul>
+
+            </div>
+          </div>
+
+        </div>
+      </div><!-- /columns -->
+    </div><!-- /container -->
+  </section>
+
+  <!-- ── Footer ── -->
+  <footer class="footer" style="background:#0d1b2a;padding:1.5rem;">
+    <div class="content has-text-centered" style="color:#506070;">
+      <p>
+        Audio courtesy of the
+        <a href="https://archive.org/details/GratefulDead" target="_blank" rel="noopener noreferrer" style="color:#60a0d0;">Internet Archive</a>.
+        No affiliation with the Grateful Dead or their estates.
+      </p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

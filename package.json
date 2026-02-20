@@ -1,0 +1,7 @@
+{
+  "name": "dead-daily-dose",
+  "private": true,
+  "scripts": {
+    "serve": "npx serve docs"
+  }
+}
