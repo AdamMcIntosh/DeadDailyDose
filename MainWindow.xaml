@@ -71,8 +71,8 @@
 
         <!-- Search by date -->
         <StackPanel Grid.Row="5" Orientation="Horizontal" Margin="0,0,0,12">
-            <TextBlock Text="Search by date (MM-DD):" Style="{StaticResource LabelStyle}" Margin="0,0,10,0"/>
-            <TextBox x:Name="ManualDateTextBox" Style="{StaticResource TextBoxStyle}" Width="88" Margin="0,0,10,0"
+            <TextBlock Text="Search by date (MM-DD or MM-DD-YY):" Style="{StaticResource LabelStyle}" Margin="0,0,10,0"/>
+            <TextBox x:Name="ManualDateTextBox" Style="{StaticResource TextBoxStyle}" Width="110" Margin="0,0,10,0"
                      Text="{Binding ManualDateInput, UpdateSourceTrigger=PropertyChanged}"/>
             <Button Content="Go" Command="{Binding SearchByDateCommand}" Style="{StaticResource SecondaryButtonStyle}" Padding="16,8"/>
         </StackPanel>

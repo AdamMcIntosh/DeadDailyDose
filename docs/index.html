@@ -46,20 +46,20 @@
                 </div>
               </div>
 
-              <!-- Date (MM-DD) -->
+              <!-- Date (MM-DD or MM-DD-YY) -->
               <div class="field">
-                <label class="label" for="dateInput">Date (MM-DD)</label>
+                <label class="label" for="dateInput">Date (MM-DD or MM-DD-YY)</label>
                 <div class="control">
                   <input
                     id="dateInput"
                     class="input"
                     type="text"
-                    placeholder="e.g. 05-08"
-                    maxlength="5"
-                    pattern="\d{2}-\d{2}"
+                    placeholder="e.g. 05-08 or 08-27-72"
+                    maxlength="8"
+                    pattern="\d{2}[-/]\d{2}([-/]\d{2})?"
                   />
                 </div>
-                <p class="help" style="color:#a0b8d0;">Leave blank for today</p>
+                <p class="help" style="color:#a0b8d0;">Leave blank for today; add year for a specific show (e.g. 08-27-72)</p>
               </div>
 
               <!-- Load button -->

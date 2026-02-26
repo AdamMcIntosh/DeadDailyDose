@@ -148,7 +148,7 @@ public class MainViewModel : INotifyPropertyChanged
         set { _playPauseButtonText = value; OnPropertyChanged(); }
     }
 
-    /// <summary>Manual date input (MM-DD) for "search by date" feature.</summary>
+    /// <summary>Manual date input (MM-DD or MM-DD-YY) for "search by date" feature.</summary>
     public string ManualDateInput
     {
         get => _manualDateInput;
@@ -264,9 +264,9 @@ public class MainViewModel : INotifyPropertyChanged
     }
 
     /// <summary>
-    /// Load show of the day (or by manual MM-DD), then metadata and setlist.
+    /// Load show of the day (or by manual date), then metadata and setlist.
     /// </summary>
-    /// <param name="manualMmDd">Optional MM-DD override (e.g. "02-20"). If null, uses current date.</param>
+    /// <param name="manualMmDd">Optional date override: MM-DD (e.g. "02-20") or MM-DD-YY / MM/DD/YY (e.g. "08-27-72"). If null, uses current date.</param>
     public async Task LoadShowAsync(string? manualMmDd = null)
     {
         if (SelectedArtist == null)
@@ -369,23 +369,76 @@ public class MainViewModel : INotifyPropertyChanged
     }
 
     /// <summary>Select a show: first by date match for the artist's collection, then fallback to random.</summary>
-    private async Task<Show?> SelectShowAsync(Artist artist, string mmdd)
+    private async Task<Show?> SelectShowAsync(Artist artist, string dateInput)
     {
         var collection = artist.Collection;
-        // Try 1: date field (e.g. date:*-02-20). IA may index as YYYY-MM-DD; wildcard can be unreliable.
-        var list = await SearchShowsAsync(artist, $"collection:{collection}+AND+date:*-{mmdd}", 50).ConfigureAwait(false);
-        if (list.Count == 0)
+
+        // Normalize separator and detect if a 2-digit year was provided (MM-DD-YY or MM/DD/YY)
+        var normalized = dateInput.Replace('/', '-');
+        var parts = normalized.Split('-');
+        var hasYear = parts.Length == 3;
+
+        string mmdd;
+        string? fullDate = null;
+        string? yyStr = null;
+
+        if (hasYear && int.TryParse(parts[2], out var yy))
         {
-            // Try 2: identifier often contains the date (e.g. gd1982-02-20.xxx, jg87-02-20.jgb...). Search for month-day in identifier.
-            var mmddInId = Uri.EscapeDataString(mmdd);
-            list = await SearchShowsAsync(artist, $"collection:{collection}+AND+identifier:*{mmddInId}*", 100).ConfigureAwait(false);
+            var mm = parts[0];
+            var dd = parts[1];
+            // Century pivot: 70-99 → 1970-1999, 00-69 → 2000-2069 (inputs are always zero-padded 2-digit)
+            var year = yy >= 70 ? 1900 + yy : 2000 + yy;
+            mmdd = $"{mm}-{dd}";
+            fullDate = $"{year:D4}-{mm}-{dd}";
+            yyStr = parts[2];
         }
-        // Try 3: for JGB etc., some shows live in other collections (e.g. Taper's Section). Search by identifier containing date + artist keyword.
-        if (list.Count == 0 && !string.IsNullOrEmpty(artist.CollectionFilterKeyword))
+        else
         {
-            var keyword = Uri.EscapeDataString(artist.CollectionFilterKeyword);
-            var mmddEsc = Uri.EscapeDataString(mmdd);
-            list = await SearchShowsAsync(artist, $"identifier:*{mmddEsc}*+AND+identifier:*{keyword}*", 100).ConfigureAwait(false);
+            mmdd = normalized;
+        }
+
+        List<ShowDoc> list;
+        if (hasYear && fullDate != null)
+        {
+            // Try 1: exact date field (date:YYYY-MM-DD)
+            list = await SearchShowsAsync(artist, $"collection:{collection}+AND+date:{fullDate}", 50).ConfigureAwait(false);
+            if (list.Count == 0)
+            {
+                // Try 2: identifier contains full 4-digit-year date (e.g. *1972-08-27*)
+                var fullDateEsc = Uri.EscapeDataString(fullDate);
+                list = await SearchShowsAsync(artist, $"collection:{collection}+AND+identifier:*{fullDateEsc}*", 100).ConfigureAwait(false);
+            }
+            if (list.Count == 0 && yyStr != null)
+            {
+                // Try 3: identifier contains 2-digit-year date (e.g. *72-08-27*)
+                var shortDateEsc = Uri.EscapeDataString($"{yyStr}-{mmdd}");
+                list = await SearchShowsAsync(artist, $"collection:{collection}+AND+identifier:*{shortDateEsc}*", 100).ConfigureAwait(false);
+            }
+            // Try 4: for JGB etc., search by identifier keyword + full date across archive
+            if (list.Count == 0 && !string.IsNullOrEmpty(artist.CollectionFilterKeyword))
+            {
+                var keyword = Uri.EscapeDataString(artist.CollectionFilterKeyword);
+                var fullDateEsc = Uri.EscapeDataString(fullDate);
+                list = await SearchShowsAsync(artist, $"identifier:*{fullDateEsc}*+AND+identifier:*{keyword}*", 100).ConfigureAwait(false);
+            }
+        }
+        else
+        {
+            // Try 1: date field (e.g. date:*-02-20). IA may index as YYYY-MM-DD; wildcard can be unreliable.
+            list = await SearchShowsAsync(artist, $"collection:{collection}+AND+date:*-{mmdd}", 50).ConfigureAwait(false);
+            if (list.Count == 0)
+            {
+                // Try 2: identifier often contains the date (e.g. gd1982-02-20.xxx, jg87-02-20.jgb...). Search for month-day in identifier.
+                var mmddInId = Uri.EscapeDataString(mmdd);
+                list = await SearchShowsAsync(artist, $"collection:{collection}+AND+identifier:*{mmddInId}*", 100).ConfigureAwait(false);
+            }
+            // Try 3: for JGB etc., some shows live in other collections (e.g. Taper's Section). Search by identifier containing date + artist keyword.
+            if (list.Count == 0 && !string.IsNullOrEmpty(artist.CollectionFilterKeyword))
+            {
+                var keyword = Uri.EscapeDataString(artist.CollectionFilterKeyword);
+                var mmddEsc = Uri.EscapeDataString(mmdd);
+                list = await SearchShowsAsync(artist, $"identifier:*{mmddEsc}*+AND+identifier:*{keyword}*", 100).ConfigureAwait(false);
+            }
         }
         if (list.Count > 0)
         {

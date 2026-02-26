@@ -174,24 +174,65 @@ async function loadShow() {
 // ---------------------------------------------------------------------------
 
 /**
- * Select a show for the given artist and MM-DD date.
+ * Select a show for the given artist and date string (MM-DD or MM-DD-YY / MM/DD/YY).
  * Mirrors MainViewModel.SelectShowAsync.
  */
-async function selectShow(artist, mmdd) {
+async function selectShow(artist, dateInput) {
   const collection = artist.collection;
 
-  // Try 1: date field (date:*-MM-DD)
-  let list = await searchShows(artist, `collection:${collection}+AND+date:*-${mmdd}`, 50);
+  // Normalize separator and detect if a 2-digit year was provided
+  const normalized = dateInput.replace(/\//g, '-');
+  const parts = normalized.split('-');
+  const hasYear = parts.length === 3;
 
-  // Try 2: identifier contains the date string
-  if (!list.length) {
-    list = await searchShows(artist, `collection:${collection}+AND+identifier:*${mmdd}*`, 100);
+  let mmdd, fullDate, yyStr;
+  if (hasYear) {
+    const mm = parts[0];
+    const dd = parts[1];
+    const yy = parseInt(parts[2], 10);
+    // Century pivot: 70-99 → 1970-1999, 00-69 → 2000-2069 (inputs are always zero-padded 2-digit)
+    const year = yy >= 70 ? 1900 + yy : 2000 + yy;
+    mmdd = `${mm}-${dd}`;
+    fullDate = `${year}-${mm}-${dd}`;
+    yyStr = parts[2];
+  } else {
+    mmdd = normalized;
   }
 
-  // Try 3: for JGB etc. — search by keyword in identifier across archive
-  if (!list.length && artist.collectionFilterKeyword) {
-    const kw = artist.collectionFilterKeyword;
-    list = await searchShows(artist, `identifier:*${mmdd}*+AND+identifier:*${kw}*`, 100);
+  let list;
+  if (hasYear) {
+    // Try 1: exact date field (date:YYYY-MM-DD)
+    list = await searchShows(artist, `collection:${collection}+AND+date:${fullDate}`, 50);
+
+    // Try 2: identifier contains full 4-digit-year date (e.g. *1972-08-27*)
+    if (!list.length) {
+      list = await searchShows(artist, `collection:${collection}+AND+identifier:*${fullDate}*`, 100);
+    }
+
+    // Try 3: identifier contains 2-digit-year date (e.g. *72-08-27*)
+    if (!list.length) {
+      list = await searchShows(artist, `collection:${collection}+AND+identifier:*${yyStr}-${mmdd}*`, 100);
+    }
+
+    // Try 4: for JGB etc. — search by keyword + full date across archive
+    if (!list.length && artist.collectionFilterKeyword) {
+      const kw = artist.collectionFilterKeyword;
+      list = await searchShows(artist, `identifier:*${fullDate}*+AND+identifier:*${kw}*`, 100);
+    }
+  } else {
+    // Try 1: date field (date:*-MM-DD)
+    list = await searchShows(artist, `collection:${collection}+AND+date:*-${mmdd}`, 50);
+
+    // Try 2: identifier contains the date string
+    if (!list.length) {
+      list = await searchShows(artist, `collection:${collection}+AND+identifier:*${mmdd}*`, 100);
+    }
+
+    // Try 3: for JGB etc. — search by keyword in identifier across archive
+    if (!list.length && artist.collectionFilterKeyword) {
+      const kw = artist.collectionFilterKeyword;
+      list = await searchShows(artist, `identifier:*${mmdd}*+AND+identifier:*${kw}*`, 100);
+    }
   }
 
   if (list.length > 0) {
