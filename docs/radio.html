@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dead Radio — Dead Daily Dose</title>
+  <meta name="description" content="24/7 Grateful Dead, JGB & Dead and Company radio from the Internet Archive." />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- Hero header -->
+  <section class="hero is-dark is-small">
+    <div class="hero-body">
+      <div class="container">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;">
+          <div>
+            <p class="title">📻⚡ Dead Radio</p>
+            <p class="subtitle">24/7 Grateful Dead · JGB · Dead &amp; Company</p>
+          </div>
+          <a href="index.html" class="button is-outlined" style="border-color:#e0c97f;color:#e0c97f;">← Daily Dose</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main -->
+  <section class="section">
+    <div class="container">
+      <div style="max-width:600px;margin:0 auto;">
+
+        <!-- Start overlay -->
+        <div id="startOverlay" class="has-text-centered" style="padding:3rem 0;">
+          <p style="font-size:1.1rem;color:#a0b8d0;margin-bottom:2rem;line-height:1.7;">
+            Endless random shows from the Internet Archive.<br>
+            Grateful Dead · JGB · Dead &amp; Company — shuffled forever.<br>
+            <span style="font-size:.9rem;opacity:.7;">Tap once to tune in.</span>
+          </p>
+          <button id="startBtn" class="button is-warning is-large">
+            📻 &nbsp;Start Radio
+          </button>
+        </div>
+
+        <!-- Now playing (hidden until started) -->
+        <div id="nowPlayingSection" class="is-hidden">
+
+          <!-- Artist / show badge -->
+          <div class="radio-artist-badge has-text-centered">
+            <div id="radioArtistName" class="radio-artist-name">—</div>
+            <div id="radioShowInfo" class="radio-show-info"></div>
+            <a id="radioShowLink" href="#" target="_blank" rel="noopener noreferrer" class="radio-show-link"></a>
+          </div>
+
+          <!-- Equalizer animation -->
+          <div class="radio-visual has-text-centered">
+            <div class="eq-bars">
+              <span class="bar"></span>
+              <span class="bar"></span>
+              <span class="bar"></span>
+              <span class="bar"></span>
+              <span class="bar"></span>
+              <span class="bar"></span>
+              <span class="bar"></span>
+            </div>
+          </div>
+
+          <!-- Track info -->
+          <div class="has-text-centered radio-track-info">
+            <p class="radio-track-label">Now Playing</p>
+            <p id="radioTrackName" class="radio-track-name"></p>
+            <p id="radioStatus" class="radio-status"></p>
+          </div>
+
+          <!-- Audio player -->
+          <div style="margin-bottom:1.25rem;">
+            <audio id="radioAudio" preload="auto" style="width:100%;filter:invert(0.85) hue-rotate(180deg);"></audio>
+          </div>
+
+          <!-- Skip button -->
+          <div class="has-text-centered" style="margin-bottom:1.5rem;">
+            <button id="skipBtn" class="button is-outlined" style="border-color:#0f3460;color:#a0b8d0;">
+              ⏭ &nbsp;Skip Show
+            </button>
+          </div>
+
+          <!-- Setlist (collapsible) -->
+          <details class="radio-setlist">
+            <summary>Show Setlist</summary>
+            <ul id="radioTrackList"></ul>
+          </details>
+
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer" style="background:#0d1b2a;padding:1.5rem;">
+    <div class="content has-text-centered" style="color:#506070;">
+      <p>
+        Audio courtesy of the
+        <a href="https://archive.org/details/GratefulDead" target="_blank" rel="noopener noreferrer" style="color:#60a0d0;">Internet Archive</a>.
+        No affiliation with the Grateful Dead or their estates.
+      </p>
+    </div>
+  </footer>
+
+  <script src="radio.js"></script>
+</body>
+</html>
