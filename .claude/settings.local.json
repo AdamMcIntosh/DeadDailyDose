@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir -Recurse -File)",
+      "Bash(measure-object)",
+      "Bash(dotnet build *)"
+    ]
+  }
+}

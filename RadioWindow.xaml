@@ -1,0 +1,118 @@
+<Window x:Class="DeadDailyDose.RadioWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Dead Radio — Dead Daily Dose"
+        Height="420" Width="500"
+        MinHeight="380" MinWidth="440"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource BrushBackground}">
+
+    <Grid Margin="24,20,24,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,16">
+            <TextBlock Text="Dead Radio"
+                       FontSize="22" FontWeight="Bold"
+                       Foreground="{StaticResource BrushAccent}"
+                       FontFamily="{StaticResource FontFamilyPrimary}"/>
+            <TextBlock Text="24/7  ·  Grateful Dead  ·  JGB  ·  Dead &amp; Company"
+                       FontSize="12"
+                       Foreground="{StaticResource BrushTextMuted}"
+                       FontFamily="{StaticResource FontFamilyPrimary}"
+                       Margin="0,2,0,0"/>
+        </StackPanel>
+
+        <!-- Now Playing card -->
+        <Border Grid.Row="1"
+                Background="{StaticResource BrushSurface}"
+                BorderBrush="{StaticResource BrushBorder}"
+                BorderThickness="1" CornerRadius="8"
+                Padding="20,16" Margin="0,0,0,14">
+            <StackPanel>
+                <TextBlock Text="{Binding ArtistName}"
+                           FontSize="19" FontWeight="Bold"
+                           Foreground="{StaticResource BrushAccent}"
+                           FontFamily="{StaticResource FontFamilyPrimary}"
+                           TextWrapping="Wrap" Margin="0,0,0,3"/>
+                <TextBlock Text="{Binding ShowInfo}"
+                           FontSize="13"
+                           Foreground="{StaticResource BrushTextSecondary}"
+                           FontFamily="{StaticResource FontFamilyPrimary}"
+                           TextWrapping="Wrap" Margin="0,0,0,14"/>
+
+                <TextBlock Text="NOW PLAYING"
+                           FontSize="10" FontWeight="SemiBold"
+                           Foreground="{StaticResource BrushTextMuted}"
+                           FontFamily="{StaticResource FontFamilyPrimary}"
+                           Margin="0,0,0,5"/>
+                <TextBlock Text="{Binding TrackName}"
+                           FontSize="15" FontWeight="SemiBold"
+                           Foreground="{StaticResource BrushTextPrimary}"
+                           FontFamily="{StaticResource FontFamilyPrimary}"
+                           TextWrapping="Wrap" MinHeight="22" Margin="0,0,0,8"/>
+                <TextBlock Text="{Binding Status}"
+                           FontSize="12" FontStyle="Italic"
+                           Foreground="{StaticResource BrushTextMuted}"
+                           FontFamily="{StaticResource FontFamilyPrimary}"
+                           MinHeight="16"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Controls -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal"
+                    HorizontalAlignment="Center" Margin="0,0,0,10">
+            <Button Content="Skip Song"
+                    Command="{Binding SkipSongCommand}"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    Margin="0,0,8,0"/>
+            <Button Content="Stop"
+                    Command="{Binding StopCommand}"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Margin="0,0,20,0"/>
+            <TextBlock Text="Vol:" Style="{StaticResource LabelStyle}" Margin="0,0,8,0"/>
+            <Slider x:Name="VolumeSlider"
+                    Style="{StaticResource SliderStyle}"
+                    Width="100" Minimum="0" Maximum="1" Value="0.8"/>
+        </StackPanel>
+
+        <!-- Archive link -->
+        <TextBlock Grid.Row="3"
+                   Cursor="Hand" MouseLeftButtonUp="ArchiveLink_Click"
+                   FontSize="11" FontFamily="{StaticResource FontFamilyMono}"
+                   TextTrimming="CharacterEllipsis"
+                   ToolTip="{Binding ShowIdentifier}">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                    <Setter Property="Foreground" Value="{StaticResource BrushTextMuted}"/>
+                    <Style.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Foreground" Value="{StaticResource BrushAccent}"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+            <Run Text="archive.org/details/"/><Run Text="{Binding ShowIdentifier}"/>
+        </TextBlock>
+
+        <!-- Loading bar (top of window) -->
+        <ProgressBar Grid.Row="0" Grid.RowSpan="4"
+                     IsIndeterminate="True"
+                     Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}"
+                     VerticalAlignment="Top" Height="3"
+                     Foreground="{StaticResource BrushAccent}"
+                     Background="Transparent"/>
+
+        <!-- Hidden MediaElement -->
+        <MediaElement x:Name="MediaElement"
+                      Visibility="Collapsed"
+                      LoadedBehavior="Manual"
+                      MediaEnded="MediaElement_MediaEnded"
+                      MediaFailed="MediaElement_MediaFailed"/>
+    </Grid>
+</Window>

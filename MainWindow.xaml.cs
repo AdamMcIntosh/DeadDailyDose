@@ -215,5 +215,11 @@ public partial class MainWindow : Window
             MediaElement.Position = TimeSpan.FromSeconds(SeekSlider.Value);
     }
 
+    private void OpenRadio_Click(object sender, RoutedEventArgs e)
+    {
+        var radio = new RadioWindow { Owner = this };
+        radio.Show();
+    }
+
     private void Exit_Click(object sender, RoutedEventArgs e) => Close();
 }

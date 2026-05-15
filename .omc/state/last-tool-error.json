@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"dir -Recurse -File | measure-object\",\"description\":\"Count total files in project\"}",
+  "error": "Exit code 127\n/usr/bin/bash: line 1: measure-object: command not found\ndir: unknown option -- e\nTry 'dir --help' for more information.",
+  "timestamp": "2026-05-15T21:06:58.451Z",
+  "retry_count": 1
+}

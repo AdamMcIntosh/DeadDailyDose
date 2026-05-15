@@ -1,0 +1,219 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1778879200566,
+  "projectRoot": "C:\\Users\\amcintosh1\\source\\repos\\DeadDailyDose",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      }
+    ],
+    "frameworks": [],
+    "packageManager": "npm",
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {
+      "serve": "npx serve docs"
+    }
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "docs"
+    ],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 5,
+      "lastAccessed": 1778879200514,
+      "keyFiles": [
+        "app.js",
+        "index.html",
+        "radio.html",
+        "radio.js",
+        "styles.css"
+      ]
+    },
+    "Models": {
+      "path": "Models",
+      "purpose": "Data models",
+      "fileCount": 4,
+      "lastAccessed": 1778879200515,
+      "keyFiles": [
+        "Artist.cs",
+        "SetlistSet.cs",
+        "Show.cs",
+        "Track.cs"
+      ]
+    },
+    "Themes": {
+      "path": "Themes",
+      "purpose": null,
+      "fileCount": 2,
+      "lastAccessed": 1778879200527,
+      "keyFiles": [
+        "ControlStyles.xaml",
+        "DesignTokens.xaml"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "docs\\radio.html",
+      "accessCount": 6,
+      "lastAccessed": 1778879902394,
+      "type": "file"
+    },
+    {
+      "path": "MainWindow.xaml",
+      "accessCount": 3,
+      "lastAccessed": 1778879850126,
+      "type": "file"
+    },
+    {
+      "path": "MainViewModel.cs",
+      "accessCount": 2,
+      "lastAccessed": 1778879315262,
+      "type": "file"
+    },
+    {
+      "path": "docs\\styles.css",
+      "accessCount": 2,
+      "lastAccessed": 1778879315608,
+      "type": "file"
+    },
+    {
+      "path": "",
+      "accessCount": 2,
+      "lastAccessed": 1778879439879,
+      "type": "directory"
+    },
+    {
+      "path": "Models\\Track.cs",
+      "accessCount": 2,
+      "lastAccessed": 1778879568454,
+      "type": "file"
+    },
+    {
+      "path": "docs\\radio.js",
+      "accessCount": 2,
+      "lastAccessed": 1778879756169,
+      "type": "file"
+    },
+    {
+      "path": "MainWindow.xaml.cs",
+      "accessCount": 2,
+      "lastAccessed": 1778879853773,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "accessCount": 1,
+      "lastAccessed": 1778879223812,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
+      "accessCount": 1,
+      "lastAccessed": 1778879223882,
+      "type": "file"
+    },
+    {
+      "path": "docs\\index.html",
+      "accessCount": 1,
+      "lastAccessed": 1778879226224,
+      "type": "file"
+    },
+    {
+      "path": "docs\\app.js",
+      "accessCount": 1,
+      "lastAccessed": 1778879226756,
+      "type": "file"
+    },
+    {
+      "path": "AppSettings.cs",
+      "accessCount": 1,
+      "lastAccessed": 1778879227004,
+      "type": "file"
+    },
+    {
+      "path": "Models\\Show.cs",
+      "accessCount": 1,
+      "lastAccessed": 1778879234078,
+      "type": "file"
+    },
+    {
+      "path": "Models\\Artist.cs",
+      "accessCount": 1,
+      "lastAccessed": 1778879234133,
+      "type": "file"
+    },
+    {
+      "path": "Themes",
+      "accessCount": 1,
+      "lastAccessed": 1778879420789,
+      "type": "directory"
+    },
+    {
+      "path": "Themes\\DesignTokens.xaml",
+      "accessCount": 1,
+      "lastAccessed": 1778879423658,
+      "type": "file"
+    },
+    {
+      "path": "Themes\\ControlStyles.xaml",
+      "accessCount": 1,
+      "lastAccessed": 1778879424001,
+      "type": "file"
+    },
+    {
+      "path": "App.xaml",
+      "accessCount": 1,
+      "lastAccessed": 1778879443908,
+      "type": "file"
+    },
+    {
+      "path": "RadioViewModel.cs",
+      "accessCount": 1,
+      "lastAccessed": 1778879813873,
+      "type": "file"
+    },
+    {
+      "path": "RadioWindow.xaml",
+      "accessCount": 1,
+      "lastAccessed": 1778879835741,
+      "type": "file"
+    },
+    {
+      "path": "RadioWindow.xaml.cs",
+      "accessCount": 1,
+      "lastAccessed": 1778879844211,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

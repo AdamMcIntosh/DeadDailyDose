@@ -1,0 +1,3 @@
+{"t":0,"agent":"ad75f86","agent_type":"explore","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"ad75f86","agent_type":"explore","event":"agent_stop","success":true,"duration_ms":46788}
+{"t":0,"agent":"a322de4","agent_type":"unknown","event":"agent_stop","success":true}

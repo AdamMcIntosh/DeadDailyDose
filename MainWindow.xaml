@@ -22,6 +22,8 @@
                 <MenuItem Header="_Refresh Show" Command="{Binding RefreshCommand}"/>
                 <MenuItem Header="Set _API Key..." Command="{Binding SetApiKeyCommand}"/>
                 <Separator/>
+                <MenuItem Header="Dead _Radio..." Click="OpenRadio_Click"/>
+                <Separator/>
                 <MenuItem Header="E_xit" Click="Exit_Click"/>
             </MenuItem>
         </Menu>
