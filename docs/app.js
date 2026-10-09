@@ -1,60 +1,42 @@
 /**
  * Dead Daily Dose — Web Edition
- * Mirrors the show-selection logic from MainViewModel.cs.
- * Data source: Internet Archive (archive.org) — no API key required.
+ * Picks a show for a calendar date (or a specific date) and plays it start to finish.
+ * Data source: Internet Archive (archive.org) — no API key required. Depends on archive.js.
  */
-
-// ---------------------------------------------------------------------------
-// Artist definitions — mirrors MainViewModel.Artists
-// ---------------------------------------------------------------------------
-const ARTISTS = [
-  {
-    name: 'Grateful Dead',
-    collection: 'GratefulDead',
-    collectionFilterKeyword: null,
-    excludeKeyword: null,
-  },
-  {
-    name: 'Jerry Garcia Band',
-    collection: 'JerryGarcia',
-    collectionFilterKeyword: 'jgb',
-    excludeKeyword: null,
-  },
-  {
-    name: 'Dead & Company',
-    collection: 'DeadAndCompany',
-    collectionFilterKeyword: null,
-    excludeKeyword: null,
-  },
-];
 
 // ---------------------------------------------------------------------------
 // DOM refs
 // ---------------------------------------------------------------------------
-const artistSelect = document.getElementById('artistSelect');
-const dateInput = document.getElementById('dateInput');
-const loadBtn = document.getElementById('loadBtn');
-const statusEl = document.getElementById('status');
-const showInfoEl = document.getElementById('showInfo');
-const showTitleEl = document.getElementById('showTitle');
-const showLinkEl = document.getElementById('showLink');
-const trackListEl = document.getElementById('trackList');
-const playerSection = document.getElementById('playerSection');
-const audioEl = document.getElementById('audioPlayer');
-const nowPlayingEl = document.getElementById('nowPlaying');
-const prevBtn = document.getElementById('prevBtn');
-const nextBtn = document.getElementById('nextBtn');
-const repeatBtn = document.getElementById('repeatBtn');
+const artistSelect   = document.getElementById('artistSelect');
+const dateInput      = document.getElementById('dateInput');
+const loadBtn        = document.getElementById('loadBtn');
+const statusEl       = document.getElementById('status');
+const playerSection  = document.getElementById('playerSection');
+const playerCard     = document.getElementById('playerCard');
+const showArtistEl   = document.getElementById('showArtist');
+const showKindEl     = document.getElementById('showKind');
+const showDateEl     = document.getElementById('showDate');
+const showVenueEl    = document.getElementById('showVenue');
+const showLinkEl     = document.getElementById('showLink');
+const showIdEl       = document.getElementById('showId');
+const trackCountEl   = document.getElementById('trackCount');
+const trackListEl    = document.getElementById('trackList');
+const audioEl        = document.getElementById('audioPlayer');
+const nowPlayingEl   = document.getElementById('nowPlaying');
+const nowPlayingMeta = document.getElementById('nowPlayingMeta');
+const prevBtn        = document.getElementById('prevBtn');
+const nextBtn        = document.getElementById('nextBtn');
+const repeatBtn      = document.getElementById('repeatBtn');
 
 // ---------------------------------------------------------------------------
 // State
 // ---------------------------------------------------------------------------
-let currentTracks = [];
+let current = null; // { artist, show }
 let currentTrackIndex = -1;
 
 /** @type {'none'|'all'|'one'} */
 let repeatMode = 'none';
-const REPEAT_LABELS = { none: 'Repeat', all: '🔁 All', one: '🔁 One' };
+const REPEAT_LABELS = { none: '🔁 Repeat', all: '🔁 All', one: '🔂 One' };
 
 /** True when we have a show loaded but playback was blocked by browser autoplay policy. */
 let autoplayBlocked = false;
@@ -63,7 +45,6 @@ let autoplayBlocked = false;
 // Initialise
 // ---------------------------------------------------------------------------
 function init() {
-  // Populate artist dropdown
   ARTISTS.forEach((a, i) => {
     const opt = document.createElement('option');
     opt.value = i;
@@ -71,334 +52,201 @@ function init() {
     artistSelect.appendChild(opt);
   });
 
-  // Default date to today (MM-DD)
   dateInput.value = getTodayMmDd();
 
-  // Wire up events
-  loadBtn.addEventListener('click', onLoadClick);
+  loadBtn.addEventListener('click', loadShowForDate);
+  dateInput.addEventListener('keydown', e => { if (e.key === 'Enter') loadShowForDate(); });
   prevBtn.addEventListener('click', playPrev);
   nextBtn.addEventListener('click', playNext);
   repeatBtn.addEventListener('click', cycleRepeatMode);
   audioEl.addEventListener('ended', onTrackEnded);
+  audioEl.addEventListener('play',  () => playerCard.classList.add('is-playing'));
+  audioEl.addEventListener('pause', () => playerCard.classList.remove('is-playing'));
+  audioEl.addEventListener('error', () => {
+    if (audioEl.getAttribute('src')) setStatus('This track could not be played.');
+  });
+
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.setActionHandler('previoustrack', playPrev);
+    navigator.mediaSession.setActionHandler('nexttrack', playNext);
+  }
 
   updateRepeatButton();
 
   // When autoplay is blocked, one tap anywhere (in response to a user gesture) can start playback
   function tryUnblockPlayback() {
-    if (!autoplayBlocked || currentTracks.length === 0) return;
+    if (!autoplayBlocked || !current) return;
     autoplayBlocked = false;
     setStatus('');
     audioEl.play().catch(() => {});
   }
-  document.addEventListener('click', tryUnblockPlayback, { once: false });
-  document.addEventListener('keydown', tryUnblockPlayback, { once: false });
+  document.addEventListener('click', tryUnblockPlayback);
+  document.addEventListener('keydown', tryUnblockPlayback);
 
-  // Auto-load on page open (and attempt autoplay; may be blocked until user interacts)
-  loadShow();
+  // Auto-load on page open (autoplay may be blocked until the user interacts)
+  loadShowForDate();
 }
 
 // ---------------------------------------------------------------------------
-// Event handlers
+// Loading a show
 // ---------------------------------------------------------------------------
-async function onLoadClick() {
-  loadShow();
-}
+async function loadShowForDate() {
+  const artist = ARTISTS[parseInt(artistSelect.value, 10)];
+  const date   = parseDateInput(dateInput.value.trim() || getTodayMmDd());
+  if (!date) {
+    setStatus('Enter a date like 05-08, 08-27-72 or 08-27-1972.');
+    return;
+  }
 
-async function loadShow() {
-  const artistIndex = parseInt(artistSelect.value, 10);
-  const artist = ARTISTS[artistIndex];
-  const mmdd = (dateInput.value || getTodayMmDd()).trim();
-
-  setStatus('Loading show…', true);
-  showInfoEl.classList.add('is-hidden');
-  playerSection.classList.add('is-hidden');
-  trackListEl.innerHTML = '';
-  currentTracks = [];
-  currentTrackIndex = -1;
+  setStatus('Finding a show…', true);
+  audioEl.pause();
+  audioEl.removeAttribute('src');
+  playerCard.classList.add('is-loading');
   autoplayBlocked = false;
-  audioEl.src = '';
 
   try {
-    let show = await selectShow(artist, mmdd);
-
-    // If no show for selected artist, try other artists (mirrors C# fallback)
-    if (!show) {
-      const others = ARTISTS.filter((_, i) => i !== artistIndex);
-      for (const other of others) {
-        show = await selectShow(other, mmdd);
-        if (show) {
-          setStatus(`No ${artist.name} show on this date; loaded ${other.name} show.`);
-          break;
-        }
-      }
-    }
-
-    if (!show) {
-      setStatus(`No shows found. Try a different date or artist.`);
+    const pick = await pickShow(artist, date);
+    if (!pick) {
+      setStatus('No shows found. Try a different date or artist.');
       return;
     }
 
-    // Display show info
-    const label = show.isRandom
-      ? `${artist.name} — Random Show`
-      : `${artist.name} — Show of the Day`;
-    showTitleEl.textContent = `${label}: ${show.date ? show.date + ' — ' : ''}${show.title || show.identifier}`;
-    showLinkEl.href = `https://archive.org/details/${show.identifier}`;
-    showLinkEl.textContent = show.identifier;
-    showInfoEl.classList.remove('is-hidden');
-
-    // Load tracks
-    setStatus('Loading tracks…', true);
-    const tracks = await loadTracks(show);
-    currentTracks = tracks;
-
-    if (tracks.length === 0) {
+    setStatus('Loading setlist…', true);
+    const show = await loadShow(pick.identifier);
+    if (!show.tracks.length) {
       setStatus('No playable tracks found for this show.');
       return;
     }
 
-    renderTrackList(tracks);
+    current = { artist: pick.artist, show };
+    renderShow(pick, date);
     playerSection.classList.remove('is-hidden');
-
-    setStatus(show.isRandom ? 'Random show loaded.' : 'Ready.');
-    // Auto-select and auto-play first track
+    setStatus(pick.message || '');
     selectTrack(0, true);
   } catch (err) {
     console.error(err);
     setStatus(`Error: ${err.message || 'Network or data error. Please try again.'}`);
+  } finally {
+    loadBtn.classList.remove('is-loading');
+    loadBtn.disabled = false;
+    playerCard.classList.remove('is-loading');
   }
 }
 
-// ---------------------------------------------------------------------------
-// Show-selection logic — mirrors SelectShowAsync / SearchShowsAsync
-// ---------------------------------------------------------------------------
+/** Selected artist on the date → other artists on the date → random show by the selected artist. */
+async function pickShow(artist, date) {
+  const onDate = await findShowOnDate(artist, date);
+  if (onDate) return { artist, identifier: onDate, isRandom: false };
 
-/**
- * Select a show for the given artist and date string (MM-DD or MM-DD-YY / MM/DD/YY).
- * Mirrors MainViewModel.SelectShowAsync.
- */
-async function selectShow(artist, dateInput) {
-  const collection = artist.collection;
-
-  // Normalize separator and detect if a 2-digit year was provided
-  const normalized = dateInput.replace(/\//g, '-');
-  const parts = normalized.split('-');
-  const hasYear = parts.length === 3;
-
-  let mmdd, fullDate, yyStr;
-  if (hasYear) {
-    const mm = parts[0];
-    const dd = parts[1];
-    const yy = parseInt(parts[2], 10);
-    // Century pivot: 70-99 → 1970-1999, 00-69 → 2000-2069 (inputs are always zero-padded 2-digit)
-    const year = yy >= 70 ? 1900 + yy : 2000 + yy;
-    mmdd = `${mm}-${dd}`;
-    fullDate = `${year}-${mm}-${dd}`;
-    yyStr = parts[2];
-  } else {
-    mmdd = normalized;
+  for (const other of ARTISTS.filter(a => a !== artist)) {
+    const id = await findShowOnDate(other, date);
+    if (id) {
+      return { artist: other, identifier: id, isRandom: false,
+               message: `No ${artist.name} show on this date — here's ${other.name} instead.` };
+    }
   }
 
-  let list;
-  if (hasYear) {
-    // Try 1: exact date field (date:YYYY-MM-DD)
-    list = await searchShows(artist, `collection:${collection}+AND+date:${fullDate}`, 50);
+  const randomId = await getRandomShowId(artist);
+  return randomId
+    ? { artist, identifier: randomId, isRandom: true, message: 'Nothing on this date — enjoy a random show.' }
+    : null;
+}
 
-    // Try 2: identifier contains full 4-digit-year date (e.g. *1972-08-27*)
-    if (!list.length) {
-      list = await searchShows(artist, `collection:${collection}+AND+identifier:*${fullDate}*`, 100);
-    }
+/**
+ * Returns a recording identifier for the date. Without a year, the featured
+ * year rotates each calendar year so the same date doesn't always land on the latest show.
+ */
+async function findShowOnDate(artist, { mm, dd, year }) {
+  const base = `collection:${artist.collection}`;
+  const fields = ['identifier', 'date'];
 
-    // Try 3: identifier contains 2-digit-year date (e.g. *72-08-27*)
-    if (!list.length) {
-      list = await searchShows(artist, `collection:${collection}+AND+identifier:*${yyStr}-${mmdd}*`, 100);
-    }
-
-    // Try 4: for JGB etc. — search by keyword + full date across archive
-    if (!list.length && artist.collectionFilterKeyword) {
-      const kw = artist.collectionFilterKeyword;
-      list = await searchShows(artist, `identifier:*${fullDate}*+AND+identifier:*${kw}*`, 100);
+  let docs;
+  if (year) {
+    const full = `${year}-${mm}-${dd}`;
+    ({ docs = [] } = await searchArchive(`${base} AND date:${full}`, { rows: 100, fields }));
+    if (!docs.length) {
+      const yy = String(year).slice(2);
+      ({ docs = [] } = await searchArchive(
+        `${base} AND (identifier:*${full}* OR identifier:*${yy}-${mm}-${dd}*)`, { rows: 100, fields }));
+      docs = docs.filter(d => docDate(d) === full);
     }
   } else {
-    // Try 1: date field (date:*-MM-DD)
-    list = await searchShows(artist, `collection:${collection}+AND+date:*-${mmdd}`, 50);
-
-    // Try 2: identifier contains the date string
-    if (!list.length) {
-      list = await searchShows(artist, `collection:${collection}+AND+identifier:*${mmdd}*`, 100);
-    }
-
-    // Try 3: for JGB etc. — search by keyword in identifier across archive
-    if (!list.length && artist.collectionFilterKeyword) {
-      const kw = artist.collectionFilterKeyword;
-      list = await searchShows(artist, `identifier:*${mmdd}*+AND+identifier:*${kw}*`, 100);
-    }
+    ({ docs = [] } = await searchArchive(`${base} AND identifier:*${mm}-${dd}*`, { rows: 500, fields }));
+    docs = docs.filter(d => docDate(d).slice(5) === `${mm}-${dd}`);
   }
+  if (!docs.length) return null;
 
-  if (list.length > 0) {
-    // Sort descending by date; take first — deterministic per day
-    list.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-    const first = list[0];
-    return { identifier: first.identifier, title: first.title, date: first.date, isRandom: false };
-  }
-
-  // Fallback: random show from collection
-  for (const rows of [1000, 3000, 5000]) {
-    const show = await tryRandomShowFromCollection(artist, collection, rows);
-    if (show) return show;
-  }
-
-  // For JGB etc.: random by identifier keyword
-  if (artist.collectionFilterKeyword) {
-    const show = await tryRandomShowByIdentifierKeyword(artist, artist.collectionFilterKeyword);
-    if (show) return show;
-  }
-
-  return null;
+  const dates = [...new Set(docs.map(docDate))].sort();
+  const chosenDate = dates[new Date().getFullYear() % dates.length];
+  const recordings = docs.filter(d => docDate(d) === chosenDate)
+                         .sort((a, b) => a.identifier.localeCompare(b.identifier));
+  return (recordings.find(d => /sbd|soundboard/i.test(d.identifier)) || recordings[0]).identifier;
 }
 
-/**
- * Search IA advanced search and return filtered docs.
- * Mirrors MainViewModel.SearchShowsAsync.
- */
-async function searchShows(artist, query, rows) {
-  const url =
-    `https://archive.org/advancedsearch.php?q=${query}` +
-    `&fl[]=identifier&fl[]=title&fl[]=date&sort[]=date+desc&rows=${rows}&output=json`;
-  const resp = await fetch(url);
-  if (!resp.ok) throw new Error(`IA search failed (${resp.status})`);
-  const data = await resp.json();
-  const docs = data?.response?.docs ?? [];
-  return filterShowsByArtist(docs, artist);
+function docDate(doc) {
+  const m = /^\d{4}-\d{2}-\d{2}/.exec(doc.date || '');
+  return m ? m[0] : dateFromIdentifier(doc.identifier);
 }
 
-/**
- * Try fetching a random show from a collection.
- * Mirrors MainViewModel.TryRandomShowFromCollectionAsync.
- */
-async function tryRandomShowFromCollection(artist, collection, rows) {
-  const url =
-    `https://archive.org/advancedsearch.php?q=collection:${collection}` +
-    `&fl[]=identifier&fl[]=title&fl[]=date&sort[]=date+desc&rows=${rows}&output=json`;
-  const resp = await fetch(url);
-  if (!resp.ok) return null;
-  const data = await resp.json();
-  const docs = data?.response?.docs ?? [];
-  const filtered = filterShowsByArtist(docs, artist);
-  if (!filtered.length) return null;
-  const d = filtered[Math.floor(Math.random() * filtered.length)];
-  return { identifier: d.identifier, title: d.title, date: d.date, isRandom: true };
-}
+/** Accepts MM-DD, MM-DD-YY or MM-DD-YYYY (with - or / separators). */
+function parseDateInput(value) {
+  const m = /^(\d{1,2})[-/](\d{1,2})(?:[-/](\d{2}|\d{4}))?$/.exec(value);
+  if (!m) return null;
+  const mm = m[1].padStart(2, '0');
+  const dd = m[2].padStart(2, '0');
+  if (+mm < 1 || +mm > 12 || +dd < 1 || +dd > 31) return null;
 
-/**
- * Try fetching a random show by identifier keyword.
- * Mirrors MainViewModel.TryRandomShowByIdentifierKeywordAsync.
- */
-async function tryRandomShowByIdentifierKeyword(artist, keyword) {
-  const url =
-    `https://archive.org/advancedsearch.php?q=identifier:*${keyword}*` +
-    `&fl[]=identifier&fl[]=title&fl[]=date&sort[]=date+desc&rows=500&output=json`;
-  const resp = await fetch(url);
-  if (!resp.ok) return null;
-  const data = await resp.json();
-  const docs = data?.response?.docs ?? [];
-  const filtered = filterShowsByArtist(docs, artist);
-  if (!filtered.length) return null;
-  const d = filtered[Math.floor(Math.random() * filtered.length)];
-  return { identifier: d.identifier, title: d.title, date: d.date, isRandom: true };
-}
-
-/**
- * Filter docs by artist include/exclude keywords.
- * Mirrors MainViewModel.FilterShowsByArtist.
- */
-function filterShowsByArtist(docs, artist) {
-  if (!docs.length) return docs;
-  const include = artist.collectionFilterKeyword;
-  const exclude = artist.excludeKeyword;
-  if (!include && !exclude) return docs;
-
-  const filtered = docs.filter((doc) => {
-    const combined = `${doc.identifier || ''} ${doc.title || ''}`.toLowerCase();
-    if (exclude && combined.includes(exclude.toLowerCase())) return false;
-    if (include && !combined.includes(include.toLowerCase())) return false;
-    return true;
-  });
-  return filtered.length > 0 ? filtered : docs;
+  let year = null;
+  if (m[3]) {
+    // Century pivot: 70-99 → 1970-1999, 00-69 → 2000-2069
+    year = m[3].length === 4 ? +m[3] : (+m[3] >= 70 ? 1900 : 2000) + +m[3];
+  }
+  return { mm, dd, year };
 }
 
 // ---------------------------------------------------------------------------
-// Track loading — mirrors MainViewModel.LoadTracksAsync
+// Rendering & playback
 // ---------------------------------------------------------------------------
+function renderShow(pick, date) {
+  const { artist, show } = current;
 
-/**
- * Fetch IA metadata and return sorted list of playable tracks.
- * Preferred formats: VBR MP3, 64Kb MP3, Ogg Vorbis (MP3 before Ogg, then by name).
- */
-async function loadTracks(show) {
-  const url = `https://archive.org/metadata/${show.identifier}`;
-  const resp = await fetch(url);
-  if (!resp.ok) throw new Error(`Metadata fetch failed (${resp.status})`);
-  const data = await resp.json();
-  const files = data.files ?? [];
-
-  const preferred = ['VBR MP3', '64Kb MP3', 'Ogg Vorbis'];
-  const candidates = files
-    .filter((f) => preferred.includes(f.format) && f.name)
-    .map((f) => ({ name: f.name, format: f.format, title: f.title || '' }));
-
-  // Sort: MP3 before Ogg Vorbis, then alphabetically by name (mirrors C# OrderBy)
-  candidates.sort((a, b) => {
-    const aOgg = a.format === 'Ogg Vorbis' ? 1 : 0;
-    const bOgg = b.format === 'Ogg Vorbis' ? 1 : 0;
-    if (aOgg !== bOgg) return aOgg - bOgg;
-    return a.name.localeCompare(b.name);
-  });
-
-  const baseUrl = `https://archive.org/download/${show.identifier}/`;
-  return candidates.map((t) => ({
-    name: t.name,
-    title: t.title,
-    url: baseUrl + encodeURIComponent(t.name),
-    displayText: t.title || t.name,
-  }));
-}
-
-// ---------------------------------------------------------------------------
-// Track list rendering & playback
-// ---------------------------------------------------------------------------
-function renderTrackList(tracks) {
-  trackListEl.innerHTML = '';
-  tracks.forEach((track, i) => {
-    const li = document.createElement('li');
-    li.className = 'track-item';
-    li.dataset.index = i;
-
-    const btn = document.createElement('button');
-    btn.className = 'button is-ghost track-btn';
-    btn.innerHTML = `<span class="track-num">${i + 1}.</span> <span class="track-title">${escapeHtml(track.displayText)}</span>`;
-    btn.addEventListener('click', () => selectTrack(i, true));
-
-    li.appendChild(btn);
-    trackListEl.appendChild(li);
-  });
+  showArtistEl.textContent = artist.name;
+  showKindEl.textContent   = pick.isRandom ? 'Random Show'
+                           : date.year     ? 'Show for this date'
+                           :                 'Show of the Day';
+  showDateEl.textContent   = formatShowDate(show.date);
+  showVenueEl.textContent  = [show.venue, show.location].filter(Boolean).join(' · ') || 'Venue unknown';
+  showLinkEl.href          = `https://archive.org/details/${show.identifier}`;
+  showIdEl.textContent     = show.identifier;
+  trackCountEl.textContent = `${show.tracks.length} tracks`;
+  renderSetlist(trackListEl, show.tracks, i => selectTrack(i, true));
 }
 
 function selectTrack(index, autoPlay) {
-  if (index < 0 || index >= currentTracks.length) return;
+  const tracks = current?.show.tracks ?? [];
+  if (index < 0 || index >= tracks.length) return;
   currentTrackIndex = index;
 
-  // Highlight active track
-  document.querySelectorAll('.track-item').forEach((el, i) => {
-    el.classList.toggle('is-active', i === index);
-  });
+  const track = tracks[index];
+  nowPlayingEl.textContent   = track.title;
+  nowPlayingMeta.textContent = describeTrack(tracks, index);
+  highlightSetlist(trackListEl, index);
+  prevBtn.disabled = index === 0;
+  nextBtn.disabled = index === tracks.length - 1;
 
-  const track = currentTracks[index];
-  nowPlayingEl.textContent = track.displayText;
+  document.title = `${track.title} — ${current.artist.name} | Dead Daily Dose`;
+  if ('mediaSession' in navigator && 'MediaMetadata' in window) {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title:  track.title,
+      artist: current.artist.name,
+      album:  [formatShowDate(current.show.date), current.show.venue].filter(Boolean).join(' · '),
+    });
+  }
+
   audioEl.src = track.url;
   if (autoPlay) {
     audioEl.play()
-      .then(() => { autoplayBlocked = false; setStatus(''); })
+      .then(() => { autoplayBlocked = false; })
       .catch(() => {
         autoplayBlocked = true;
         setStatus('Tap anywhere to start playback.');
@@ -411,7 +259,8 @@ function playPrev() {
 }
 
 function playNext() {
-  if (currentTrackIndex < currentTracks.length - 1) selectTrack(currentTrackIndex + 1, true);
+  const count = current?.show.tracks.length ?? 0;
+  if (currentTrackIndex < count - 1) selectTrack(currentTrackIndex + 1, true);
 }
 
 function cycleRepeatMode() {
@@ -421,24 +270,20 @@ function cycleRepeatMode() {
 
 function updateRepeatButton() {
   repeatBtn.textContent = REPEAT_LABELS[repeatMode];
+  repeatBtn.classList.toggle('is-active', repeatMode !== 'none');
   repeatBtn.title = `Repeat: ${repeatMode === 'none' ? 'None' : repeatMode === 'all' ? 'Repeat All' : 'Repeat One'}. Click to cycle.`;
 }
 
 function onTrackEnded() {
+  const count = current?.show.tracks.length ?? 0;
   if (repeatMode === 'one' && currentTrackIndex >= 0) {
     audioEl.currentTime = 0;
     audioEl.play().catch(() => {});
-    return;
-  }
-  if (currentTrackIndex < currentTracks.length - 1) {
+  } else if (currentTrackIndex < count - 1) {
     playNext();
-    return;
-  }
-  if (repeatMode === 'all' && currentTracks.length > 0) {
+  } else if (repeatMode === 'all' && count > 0) {
     selectTrack(0, true);
-    return;
   }
-  // None and at end: stop (no-op)
 }
 
 // ---------------------------------------------------------------------------
@@ -455,14 +300,6 @@ function setStatus(msg, loading = false) {
   statusEl.textContent = msg;
   loadBtn.classList.toggle('is-loading', loading);
   loadBtn.disabled = loading;
-}
-
-function escapeHtml(str) {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 }
 
 // ---------------------------------------------------------------------------

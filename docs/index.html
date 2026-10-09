@@ -60,8 +60,8 @@
                     class="input"
                     type="text"
                     placeholder="e.g. 05-08 or 08-27-72"
-                    maxlength="8"
-                    pattern="\d{2}[-/]\d{2}([-/]\d{2})?"
+                    maxlength="10"
+                    pattern="\d{1,2}[-/]\d{1,2}([-/](\d{2}|\d{4}))?"
                   />
                 </div>
                 <p class="help" style="color:#a0b8d0;">Leave blank for today; add year for a specific show (e.g. 08-27-72)</p>
@@ -83,45 +83,59 @@
           </div>
         </div>
 
-        <!-- ── Show info + player card ── -->
+        <!-- ── Show + player ── -->
         <div class="column is-full-mobile is-half-tablet is-two-thirds-desktop">
+          <div id="playerSection" class="is-hidden">
 
-          <!-- Show info -->
-          <div id="showInfo" class="is-hidden">
-            <div class="show-badge">
-              <p id="showTitle"></p>
-              <a id="showLink" href="#" target="_blank" rel="noopener noreferrer"></a>
-            </div>
-          </div>
-
-          <!-- Player -->
-          <div id="playerSection" class="card is-hidden">
-            <header class="card-header">
-              <p class="card-header-title">🎵 Now Playing: <span id="nowPlaying" style="font-weight:400;margin-left:.5rem;color:#a0b8d0;"></span></p>
-            </header>
-            <div class="card-content">
-
-              <!-- Audio element -->
-              <div class="field">
-                <audio id="audioPlayer" controls preload="metadata"></audio>
+            <div id="playerCard" class="player-card">
+              <div class="player-card-top">
+                <span id="showArtist" class="artist-chip"></span>
+                <span id="showKind" class="eyebrow" style="margin:0;"></span>
               </div>
 
-              <!-- Prev / Next / Repeat -->
-              <div class="field">
-                <div class="buttons">
-                  <button id="prevBtn" class="button is-small is-outlined" style="border-color:#0f3460;color:#a0b8d0;">⏮ Prev</button>
-                  <button id="nextBtn" class="button is-small is-outlined" style="border-color:#0f3460;color:#a0b8d0;">Next ⏭</button>
-                  <button id="repeatBtn" class="button is-small is-outlined" style="border-color:#0f3460;color:#a0b8d0;" title="Repeat: None. Click to cycle.">🔁 Repeat</button>
-                </div>
+              <div class="show-details is-hero">
+                <p id="showDate" class="show-date"></p>
+                <p id="showVenue" class="show-venue"></p>
+                <a id="showLink" href="#" target="_blank" rel="noopener noreferrer" class="show-link">
+                  View recording on Archive.org ↗
+                </a>
+                <p id="showId" class="show-id"></p>
               </div>
 
-              <!-- Track list -->
-              <p class="label" style="margin-bottom:.5rem;">Tracks</p>
-              <ul id="trackList"></ul>
+              <div class="player-divider"></div>
 
+              <p class="eyebrow">Now Playing</p>
+              <h2 id="nowPlaying" class="np-title"></h2>
+              <p id="nowPlayingMeta" class="np-meta"></p>
+
+              <div class="eq-bars" aria-hidden="true">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+              </div>
+
+              <audio id="audioPlayer" controls preload="metadata"></audio>
+
+              <div class="player-controls">
+                <button id="prevBtn" class="button player-btn">⏮ Prev</button>
+                <button id="nextBtn" class="button player-btn">Next ⏭</button>
+                <button id="repeatBtn" class="button player-btn" title="Repeat: None. Click to cycle.">🔁 Repeat</button>
+              </div>
             </div>
-          </div>
 
+            <div class="setlist" style="margin-top:1.25rem;">
+              <div class="setlist-header">
+                <span>Setlist</span>
+                <span id="trackCount" class="setlist-count"></span>
+              </div>
+              <ol id="trackList" class="setlist-list"></ol>
+            </div>
+
+          </div>
         </div>
       </div><!-- /columns -->
     </div><!-- /container -->
@@ -138,6 +152,7 @@
     </div>
   </footer>
 
+  <script src="archive.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
