@@ -28,7 +28,7 @@
   <!-- Main -->
   <section class="section">
     <div class="container">
-      <div style="max-width:600px;margin:0 auto;">
+      <div style="max-width:960px;margin:0 auto;">
 
         <!-- Start overlay -->
         <div id="startOverlay" class="has-text-centered" style="padding:3rem 0;">
@@ -44,46 +44,59 @@
 
         <!-- Now playing (hidden until started) -->
         <div id="nowPlayingSection" class="is-hidden">
+          <div class="columns is-variable is-5">
 
-          <!-- Artist / show badge -->
-          <div class="radio-artist-badge has-text-centered">
-            <div id="radioArtistName" class="radio-artist-name">—</div>
-            <div id="radioShowInfo" class="radio-show-info"></div>
-            <a id="radioShowLink" href="#" target="_blank" rel="noopener noreferrer" class="radio-show-link"></a>
-          </div>
+            <!-- Now playing -->
+            <div class="column is-7">
+              <div id="radioCard" class="radio-card">
+                <div class="radio-card-top">
+                  <span id="radioArtistName" class="radio-artist-chip">—</span>
+                  <span class="radio-on-air"><span class="radio-on-air-dot"></span>On Air</span>
+                </div>
 
-          <!-- Equalizer animation -->
-          <div class="radio-visual has-text-centered">
-            <div class="eq-bars">
-              <span class="bar"></span>
-              <span class="bar"></span>
-              <span class="bar"></span>
-              <span class="bar"></span>
-              <span class="bar"></span>
-              <span class="bar"></span>
-              <span class="bar"></span>
+                <p class="radio-track-label">Now Playing</p>
+                <h2 id="radioTrackName" class="radio-track-name">—</h2>
+                <p id="radioTrackMeta" class="radio-track-meta"></p>
+
+                <div class="eq-bars" aria-hidden="true">
+                  <span class="bar"></span>
+                  <span class="bar"></span>
+                  <span class="bar"></span>
+                  <span class="bar"></span>
+                  <span class="bar"></span>
+                  <span class="bar"></span>
+                  <span class="bar"></span>
+                </div>
+
+                <audio id="radioAudio" controls preload="auto"></audio>
+                <p id="radioStatus" class="radio-status" aria-live="polite"></p>
+
+                <button id="skipBtn" class="button radio-skip-btn">⏭ &nbsp;Next Song</button>
+
+                <div class="radio-show">
+                  <p class="radio-show-label">From the show</p>
+                  <p id="radioShowDate" class="radio-show-date"></p>
+                  <p id="radioShowVenue" class="radio-show-venue"></p>
+                  <a id="radioShowLink" href="#" target="_blank" rel="noopener noreferrer" class="radio-show-link">
+                    View recording on Archive.org ↗
+                  </a>
+                  <p id="radioShowId" class="radio-show-id"></p>
+                </div>
+              </div>
             </div>
-          </div>
 
-          <!-- Track info -->
-          <div class="has-text-centered radio-track-info">
-            <p class="radio-track-label">Now Playing</p>
-            <p id="radioTrackName" class="radio-track-name"></p>
-            <p id="radioStatus" class="radio-status"></p>
-          </div>
+            <!-- Setlist -->
+            <div class="column is-5">
+              <div class="radio-setlist">
+                <div class="radio-setlist-header">
+                  <span>Setlist</span>
+                  <span id="radioSetlistCount" class="radio-setlist-count"></span>
+                </div>
+                <ol id="radioTrackList" class="radio-setlist-list"></ol>
+              </div>
+            </div>
 
-          <!-- Audio player -->
-          <div style="margin-bottom:1.25rem;">
-            <audio id="radioAudio" preload="auto" style="width:100%;filter:invert(0.85) hue-rotate(180deg);"></audio>
           </div>
-
-          <!-- Skip button -->
-          <div class="has-text-centered" style="margin-bottom:1.5rem;">
-            <button id="skipBtn" class="button is-outlined" style="border-color:#0f3460;color:#a0b8d0;">
-              ⏭ &nbsp;Skip Song
-            </button>
-          </div>
-
         </div>
 
       </div>
