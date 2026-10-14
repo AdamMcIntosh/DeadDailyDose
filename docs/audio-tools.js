@@ -15,7 +15,7 @@ function createAudioTools(audio, host) {
       </fieldset>
       <p class="tools-note" data-enhance-status role="status">Gentle EQ and rumble reduction; no AI processing or added recording detail.</p>
     </details>
-    <details class="audio-tools">
+    <details class="audio-tools" open>
       <summary>Download full show</summary>
       <p class="tools-note" data-download-status role="status">Load a show to see downloads.</p>
       <div class="download-options"></div>
@@ -131,7 +131,7 @@ function createAudioTools(audio, host) {
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
         const size = option.bytes ? ` · ${(option.bytes / 1024 ** 2).toFixed(0)} MB` : '';
-        link.textContent = `${option.format} · ${option.count} files${size}`;
+        link.textContent = `Download full show ZIP · ${option.format} · ${option.count} files${size}`;
         link.addEventListener('click', () => {
           get('download-status').textContent = 'Download requested from Archive.org. ZIP preparation can take a moment. If it fails, use “View files on Archive.org” to retry or download individual files.';
         });
