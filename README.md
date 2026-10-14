@@ -98,3 +98,46 @@ The site will be available at `https://AdamMcIntosh.github.io/DeadDailyDose/` wi
 ## License
 
 MIT License. See [LICENSE](LICENSE).
+
+### Web audio enhancement and downloads
+
+Both Daily Dose and Radio include **Enhance audio** controls beneath the player.
+Enable processing to adjust bass, clarity, treble, channel balance, and low-rumble
+reduction. **Listen to original** bypasses the effects; **Reset settings** restores
+neutral EQ/balance and the gentle rumble filter. Positive EQ reserves headroom and
+may reduce playback volume. These are listening adjustments, not AI restoration or
+a claim of higher source resolution. Controls apply for the current page session.
+
+**Download full show** lists the available audio formats with file counts and
+approximate uncompressed totals. Each link requests an Archive-generated ZIP of
+that format; the browser handles saving, progress, and cancellation. All files in
+the format are included, including tuning and breaks. Downloads contain the
+original recording, without listening effects. No backend or upload is required.
+Restricted items and identified Grateful Dead soundboards/matrices do not offer
+download links. Archive ultimately controls availability; use the recording link
+if ZIP generation fails. Downloading does not add an offline library to the app.
+
+Enhancement requires Web Audio and CORS-enabled audio from Archive (including
+redirects). Network errors or unavailable streams may prevent playback; the
+recording link remains available. Full-show processed exports are not implemented.
+
+Run download-selection checks with `node --test tests/downloads.test.cjs`.
+Open `tests/audio-tools.browser.html` in a browser to exercise the actual Web Audio
+graph and controls (allow audio playback if prompted).
+
+### Web track transitions
+
+Daily Dose buffers the next track in a second audio element and hands playback to
+that element when the current track ends. Repeat One and Repeat All also preload
+their next track. Radio looks up its next show and buffers the next song during
+playback, without its previous intentional delay between songs. Volume, mute,
+playback speed, and enhancement settings carry across the handoff.
+
+Transitions preserve the recorded audio: there is no crossfade, silence trimming,
+or overlap across live-show segues. This reduces network-loading gaps but does not
+guarantee sample-accurate gapless playback; browsers can limit preloading, and
+slow connections or silence encoded in the recording can still cause pauses.
+Preloading uses additional bandwidth for one upcoming track, even if you skip it.
+
+Run `node --test tests/*.test.cjs` for download and transition checks. The browser
+smoke test also checks a buffered deck handoff with enhancement enabled.

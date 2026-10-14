@@ -66,6 +66,7 @@ async function loadShow(identifier) {
 
   return {
     identifier,
+    downloads: buildDownloadOptions(identifier, data),
     date:     firstValue(meta.date) || dateFromIdentifier(identifier),
     venue:    firstValue(meta.venue) || venueFromTitle(firstValue(meta.title)),
     location: firstValue(meta.coverage),
@@ -226,4 +227,30 @@ function formatDuration(secs) {
   const m = Math.floor((total % 3600) / 60);
   const s = String(total % 60).padStart(2, '0');
   return h ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`;
+}
+
+/** Only offer public formats; Archive remains the authority for access at download time. */
+function buildDownloadOptions(identifier, data) {
+  const meta = data.metadata || {};
+  const flag = value => (Array.isArray(value) ? value : [value])
+    .some(v => v === true || v === 1 || /^(true|1|yes)$/i.test(String(v)));
+  if ([data.is_dark, data.nodownload, meta.nodownload, meta['access-restricted-item']]
+      .some(flag)) return [];
+  const collection = [].concat(meta.collection || []);
+  const source = [].concat(meta.source || [], meta.type || []).join(' ');
+  if (collection.includes('GratefulDead') && /\bsbd\b|soundboard|matrix/i.test(`${identifier} ${source}`)) return [];
+
+  const formats = ['Flac', '24bit Flac', 'FLAC', 'Shorten', 'VBR MP3', 'MP3', 'Ogg Vorbis', '64Kb MP3'];
+  return formats.flatMap(format => {
+    const all = (data.files || []).filter(f => f.format === format && f.name);
+    // Do not advertise a partial format as a full-show download.
+    if (!all.length || all.some(f => flag(f.private) || flag(f.nodownload))) return [];
+    const id = encodeURIComponent(identifier);
+    return [{
+      format,
+      count: all.length,
+      bytes: all.reduce((sum, f) => sum + (Number(f.size) || 0), 0),
+      url: `https://archive.org/compress/${id}/formats=${encodeURIComponent(format)}&file=/${id}.zip`,
+    }];
+  });
 }

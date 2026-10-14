@@ -20,11 +20,15 @@ const radioShowId       = document.getElementById('radioShowId');
 const radioTrackList    = document.getElementById('radioTrackList');
 const radioSetlistCount = document.getElementById('radioSetlistCount');
 const radioStatus       = document.getElementById('radioStatus');
-const radioAudio        = document.getElementById('radioAudio');
+const radioAudio        = createTransitionPlayer(document.getElementById('radioAudio'));
 const skipBtn           = document.getElementById('skipBtn');
 
 let isLoading = false;
+const audioTools = createAudioTools(radioAudio, document.getElementById('audioTools'));
+
 let current   = null; // { artist, show, index }
+let upcoming = null;
+let retryTimer = null;
 
 // ---------------------------------------------------------------------------
 // Boot
@@ -40,14 +44,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   radioAudio.addEventListener('ended', () => {
     setStatus('Loading next song…');
-    setTimeout(loadRandomSong, 600);
+    loadRandomSong();
   });
   radioAudio.addEventListener('play',  () => radioCard.classList.add('is-playing'));
   radioAudio.addEventListener('pause', () => radioCard.classList.remove('is-playing'));
   radioAudio.addEventListener('error', () => {
     if (!isLoading && radioAudio.getAttribute('src')) {
       setStatus('Track unavailable — skipping…');
-      setTimeout(loadRandomSong, 2000);
+      clearTimeout(retryTimer);
+      retryTimer = setTimeout(loadRandomSong, 2000);
     }
   });
 
@@ -64,8 +69,7 @@ function skipSong() {
 
 function stopAudio() {
   radioAudio.pause();
-  radioAudio.removeAttribute('src');
-  radioAudio.load();
+
   radioCard.classList.remove('is-playing');
 }
 
@@ -79,30 +83,19 @@ async function loadRandomSong() {
   radioCard.classList.add('is-loading');
   setStatus('Tuning in…');
 
+  clearTimeout(retryTimer);
   try {
-    // Keep trying until we get a playable song
-    while (true) {
-      const artist = ARTISTS[Math.floor(Math.random() * ARTISTS.length)];
-      const identifier = await getRandomShowId(artist);
-      if (!identifier) { setStatus('Searching…'); await sleep(1500); continue; }
-
-      setStatus('Loading setlist…');
-      const show = await loadShow(identifier);
-      if (!show.tracks.length) { setStatus('No playable tracks — skipping…'); await sleep(1000); continue; }
-
-      const songs = show.tracks.filter(t => t.isSong);
-      const pool  = songs.length ? songs : show.tracks;
-      const track = pool[Math.floor(Math.random() * pool.length)];
-
-      current = { artist, show, index: track.index };
-      renderShow();
-      playCurrent();
-      break;
-    }
+    const next = await (upcoming || findRandomSong());
+    upcoming = null;
+    if (!next) throw new Error('No playable show found');
+    current = next;
+    renderShow();
+    playCurrent();
   } catch (err) {
+    upcoming = null;
     console.error(err);
     setStatus('Network error — retrying…');
-    setTimeout(loadRandomSong, 5000);
+    retryTimer = setTimeout(loadRandomSong, 5000);
   } finally {
     isLoading = false;
     skipBtn.disabled = false;
@@ -110,8 +103,33 @@ async function loadRandomSong() {
   }
 }
 
+async function findRandomSong() {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const artist = ARTISTS[Math.floor(Math.random() * ARTISTS.length)];
+    const identifier = await getRandomShowId(artist);
+    if (!identifier) continue;
+    const show = await loadShow(identifier);
+    if (!show.tracks.length) continue;
+    const songs = show.tracks.filter(t => t.isSong);
+    const pool = songs.length ? songs : show.tracks;
+    const track = pool[Math.floor(Math.random() * pool.length)];
+    return { artist, show, index: track.index };
+  }
+  return null;
+}
+
+function prepareRadioSong() {
+  if (upcoming) return;
+  // A failed speculative lookup must not interrupt the song currently playing.
+  upcoming = findRandomSong().then(next => {
+    if (next) radioAudio.queue(next.show.tracks[next.index].url);
+    return next;
+  }).catch(() => null);
+}
+
 function playTrack(index) {
   if (isLoading || !current) return;
+  clearTimeout(retryTimer);
   current.index = index;
   playCurrent();
 }
@@ -136,10 +154,16 @@ function playCurrent() {
   setStatus('');
   radioAudio.src = track.url;
   radioAudio.play().catch(() => setStatus('Press play to listen.'));
+  // Selecting a setlist track may have cleared the buffered deck. Restore it.
+  if (upcoming) upcoming.then(next => {
+    if (next) radioAudio.queue(next.show.tracks[next.index].url);
+  });
+  else prepareRadioSong();
 }
 
 function renderShow() {
   const { artist, show } = current;
+  audioTools.setShow(show);
 
   radioArtistName.textContent   = artist.name;
   radioShowDate.textContent     = formatShowDate(show.date);
@@ -151,4 +175,3 @@ function renderShow() {
 }
 
 function setStatus(msg) { radioStatus.textContent = msg; }
-function sleep(ms)       { return new Promise(r => setTimeout(r, ms)); }

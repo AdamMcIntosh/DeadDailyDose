@@ -391,3 +391,17 @@ audio {
     max-height: 360px;
   }
 }
+
+/* Shared listening and download tools */
+.audio-tools { margin-top: 1rem; padding-top: .8rem; border-top: 1px solid #2a3a5e; }
+.audio-tools summary { cursor: pointer; color: #e0c97f; font-weight: 600; padding: .35rem 0; }
+.tools-note { color: #a0b8d0; font-size: .85rem; line-height: 1.5; margin: .6rem 0; }
+.audio-tools fieldset { border: 0; margin-top: .8rem; min-width: 0; }
+.audio-tools fieldset:disabled { opacity: .5; }
+.audio-tools label { display: block; color: #c4d4e4; margin: .7rem 0; font-size: .9rem; }
+.audio-tools input[type="range"] { display: block; width: 100%; margin-top: .4rem; accent-color: #e0c97f; }
+.audio-tools output { float: right; font-variant-numeric: tabular-nums; }
+.download-options { display: flex; gap: .5rem; flex-wrap: wrap; margin: .7rem 0; }
+.download-options .button { height: auto; white-space: normal; text-align: left; }
+.audio-tools a { color: #e0c97f; }
+.audio-tools :focus-visible { outline: 2px solid #e0c97f; outline-offset: 3px; }

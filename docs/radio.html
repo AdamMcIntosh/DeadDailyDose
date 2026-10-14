@@ -68,7 +68,8 @@
                   <span class="bar"></span>
                 </div>
 
-                <audio id="radioAudio" controls preload="auto"></audio>
+                <audio id="radioAudio" crossorigin="anonymous" controls preload="auto"></audio>
+                <div id="audioTools"></div>
                 <p id="radioStatus" class="player-status" aria-live="polite"></p>
 
                 <div class="player-controls">
@@ -119,6 +120,8 @@
   </footer>
 
   <script src="archive.js"></script>
+  <script src="transitions.js"></script>
+  <script src="audio-tools.js"></script>
   <script src="radio.js"></script>
 </body>
 </html>

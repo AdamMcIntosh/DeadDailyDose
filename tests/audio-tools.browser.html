@@ -1,0 +1,57 @@
+<!doctype html><meta charset="utf-8"><title>Audio tools smoke test</title>
+<audio crossorigin="anonymous" controls></audio><div id="tools"></div><pre id="result">RUNNING</pre>
+<script src="../docs/archive.js"></script><script src="../docs/transitions.js"></script><script src="../docs/audio-tools.js"></script>
+<script>
+(async () => {
+  const result = document.querySelector('#result');
+  const assert = (value, message) => { if (!value) throw new Error(message); };
+  try {
+    const host = document.querySelector('#tools');
+    const audio = createTransitionPlayer(document.querySelector('audio'));
+    const controls = createAudioTools(audio, host);
+    controls.setShow({ identifier: 'audience-show', downloads: buildDownloadOptions('audience-show', { files: [{name:'track.flac', format:'Flac', size:'1024'}] }) });
+    assert(host.querySelectorAll('.download-options a').length === 1, 'Download missing');
+    controls.setShow({ identifier: 'restricted', downloads: [] });
+    assert(!host.querySelector('.download-options a'), 'Old download survived show change');
+    assert(host.querySelector('[data-download-status]').textContent.includes('streaming-only'), 'Restriction message missing');
+    const toggle = host.querySelector('[data-toggle]');
+    toggle.click();
+    await new Promise(r => setTimeout(r, 300));
+    assert(toggle.getAttribute('aria-pressed') === 'true', 'Enable failed');
+    assert(!host.querySelector('fieldset').disabled, 'Controls disabled');
+    const bass = host.querySelector('[data-bass]');
+    bass.value = '3'; bass.dispatchEvent(new Event('input', {bubbles:true}));
+    assert(host.querySelector('[data-bass-value]').textContent === '3 dB', 'Slider failed');
+    host.querySelector('[data-reset]').click();
+    assert(bass.value === '0', 'Reset failed');
+    toggle.click(); await new Promise(r => setTimeout(r, 300));
+    assert(toggle.getAttribute('aria-pressed') === 'false', 'Bypass failed');
+    assert(host.querySelector('fieldset').disabled, 'Bypass controls still active');
+    toggle.click(); await new Promise(r => setTimeout(r, 300));
+    assert(toggle.getAttribute('aria-pressed') === 'true', 'Re-enable failed');
+    const wav = new Uint8Array(2044);
+    const view = new DataView(wav.buffer);
+    function text(offset, value) { [...value].forEach((char, i) => wav[offset + i] = char.charCodeAt(0)); }
+    text(0, 'RIFF'); view.setUint32(4, 2036, true); text(8, 'WAVEfmt ');
+    view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+    view.setUint32(24, 8000, true); view.setUint32(28, 16000, true);
+    view.setUint16(32, 2, true); view.setUint16(34, 16, true); text(36, 'data'); view.setUint32(40, 2000, true);
+    const url = URL.createObjectURL(new Blob([wav], {type: 'audio/wav'}));
+    const ready = new Promise((resolve, reject) => {
+      audio.elements[1].addEventListener('canplay', resolve, {once:true});
+      audio.elements[1].addEventListener('error', reject, {once:true});
+    });
+    audio.queue(url);
+    await ready;
+    audio.volume = 0.3;
+    audio.src = url;
+    assert(audio.elements[0].hidden && !audio.elements[1].hidden, 'Deck handoff failed');
+    assert(audio.volume === 0.3, 'Volume lost');
+    await audio.play();
+    assert(!audio.paused, 'Buffered deck did not play with enhancement');
+    audio.pause(); audio.removeAttribute('src'); audio.load();
+    URL.revokeObjectURL(url);
+    result.textContent = 'PASS: download rendering, show changes, AudioContext graph, EQ, reset, bypass, re-enable, buffered deck playback';
+  } catch (error) { result.textContent = 'FAIL: ' + error.message; }
+})();
+</script>

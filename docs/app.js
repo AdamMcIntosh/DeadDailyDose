@@ -21,7 +21,7 @@ const showLinkEl     = document.getElementById('showLink');
 const showIdEl       = document.getElementById('showId');
 const trackCountEl   = document.getElementById('trackCount');
 const trackListEl    = document.getElementById('trackList');
-const audioEl        = document.getElementById('audioPlayer');
+const audioEl        = createTransitionPlayer(document.getElementById('audioPlayer'));
 const nowPlayingEl   = document.getElementById('nowPlaying');
 const nowPlayingMeta = document.getElementById('nowPlayingMeta');
 const prevBtn        = document.getElementById('prevBtn');
@@ -31,6 +31,8 @@ const repeatBtn      = document.getElementById('repeatBtn');
 // ---------------------------------------------------------------------------
 // State
 // ---------------------------------------------------------------------------
+const audioTools = createAudioTools(audioEl, document.getElementById('audioTools'));
+
 let current = null; // { artist, show }
 let currentTrackIndex = -1;
 
@@ -99,6 +101,7 @@ async function loadShowForDate() {
   }
 
   setStatus('Finding a show…', true);
+  audioEl.clearQueue();
   audioEl.pause();
   audioEl.removeAttribute('src');
   playerCard.classList.add('is-loading');
@@ -209,6 +212,7 @@ function parseDateInput(value) {
 // ---------------------------------------------------------------------------
 function renderShow(pick, date) {
   const { artist, show } = current;
+  audioTools.setShow(show);
 
   showArtistEl.textContent = artist.name;
   showKindEl.textContent   = pick.isRandom ? 'Random Show'
@@ -244,6 +248,7 @@ function selectTrack(index, autoPlay) {
   }
 
   audioEl.src = track.url;
+  prepareNextTrack();
   if (autoPlay) {
     audioEl.play()
       .then(() => { autoplayBlocked = false; })
@@ -266,6 +271,7 @@ function playNext() {
 function cycleRepeatMode() {
   repeatMode = repeatMode === 'none' ? 'all' : repeatMode === 'all' ? 'one' : 'none';
   updateRepeatButton();
+  prepareNextTrack();
 }
 
 function updateRepeatButton() {
@@ -274,16 +280,22 @@ function updateRepeatButton() {
   repeatBtn.title = `Repeat: ${repeatMode === 'none' ? 'None' : repeatMode === 'all' ? 'Repeat All' : 'Repeat One'}. Click to cycle.`;
 }
 
-function onTrackEnded() {
+function nextTrackIndex() {
   const count = current?.show.tracks.length ?? 0;
-  if (repeatMode === 'one' && currentTrackIndex >= 0) {
-    audioEl.currentTime = 0;
-    audioEl.play().catch(() => {});
-  } else if (currentTrackIndex < count - 1) {
-    playNext();
-  } else if (repeatMode === 'all' && count > 0) {
-    selectTrack(0, true);
-  }
+  if (!count || currentTrackIndex < 0) return -1;
+  if (repeatMode === 'one') return currentTrackIndex;
+  if (currentTrackIndex < count - 1) return currentTrackIndex + 1;
+  return repeatMode === 'all' ? 0 : -1;
+}
+
+function prepareNextTrack() {
+  const next = nextTrackIndex();
+  audioEl.queue(next < 0 ? null : current.show.tracks[next].url);
+}
+
+function onTrackEnded() {
+  const next = nextTrackIndex();
+  if (next >= 0) selectTrack(next, true);
 }
 
 // ---------------------------------------------------------------------------
